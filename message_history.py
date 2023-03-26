@@ -1,12 +1,20 @@
 import pickle
 from pathlib import Path
 import colorama
+from shutil import get_terminal_size
 
 # This provides functionality for saving and displaying message history.
 
 LOG_FILENAME = "log.txt"
 FILENAME_MESSAGE_HISTORY = "message_history.pkl"
 PATHNAME_MESSAGE_HISTORY = "~/.gpt_cli/"
+
+USER_COLOR = colorama.Fore.BLUE 
+SYSTEM_COLOR = colorama.Fore.RED 
+ASSISTANT_COLOR = colorama.Fore.BLACK 
+DEFAULT_COLOR = colorama.Style.RESET_ALL
+
+colorama.init(autoreset=True)
 
 class History:
 
@@ -44,13 +52,13 @@ class History:
 
 def _get_line_color(role):
     if role == "user":
-        color = colorama.Fore.BLUE 
+        color = USER_COLOR
     elif role == "assistant":
-        color = colorama.Fore.BLACK 
+        color = ASSISTANT_COLOR 
     elif role == "system":
-        color = colorama.Fore.RED 
+        color = SYSTEM_COLOR 
     else:
-        color = colorama.Fore.BLACK
+        color = DEFAULT_COLOR
     return color
 
 def is_history_list(pathname=PATHNAME_MESSAGE_HISTORY, filename=FILENAME_MESSAGE_HISTORY):
@@ -105,7 +113,13 @@ def update_history(reply_index, user_prompt, response, model_name, pathname=PATH
         }, f)
 
 def _display_history_line(chat_name, history):
-    print(f"{chat_name[:20]}: {history.get_message_history()[1]['content'][:60]}...{history.get_message_history()[-1]['content'][-60:]}")
+    line_length = get_terminal_size().columns 
+    start_length = line_length // 2 - 2 - len(chat_name)
+    end_length = line_length // 2 - 2 - len(chat_name)
+    start_message = f"{USER_COLOR}{history.get_message_history()[1]['content'][:start_length]}"
+    end_message = f"{ASSISTANT_COLOR}{history.get_message_history()[-1]['content'][-end_length:]}"
+    print(f"{chat_name}: {start_message}...{end_message}")
+    # print(f"{chat_name[:20]}: {history.get_message_history()[1]['content'][:60]}...{history.get_message_history()[-1]['content'][-60:]}")
 
 def display_history(index, pathname=PATHNAME_MESSAGE_HISTORY, filename=FILENAME_MESSAGE_HISTORY):
     history_list = get_history_list(pathname, filename)
