@@ -83,8 +83,7 @@ if __name__ == "__main__":
     else:
         current_chat_name = str(len(chat_names))
         current_history = message_history.History(current_chat_name,
-                                                  system_prompt,
-                                                  model_name)
+                                                  system_prompt)
         
     current_history.append_user_message(user_prompt)
 
@@ -95,7 +94,7 @@ if __name__ == "__main__":
 
     completion = openai.ChatCompletion.create(
         model = model_name,
-        messages = current_history.get_message_history()
+        messages = current_history.get_message_history(for_openai=True)
     )
 
     response = completion.choices[0].message.content
@@ -105,10 +104,10 @@ if __name__ == "__main__":
 
     # Log to history
     if reply_mode:
-        message_history.update_history(reply_index, user_prompt, response)
+        message_history.update_history(reply_index, user_prompt, response, model_name)
     else:
         # Add GPT's response to current_history object
-        current_history.append_response(response)
+        current_history.append_response(response, model_name)
         # Save current_history object to message history
         message_history.append_history(current_history)
 
