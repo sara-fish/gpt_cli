@@ -11,7 +11,7 @@ PATHNAME_MESSAGE_HISTORY = "~/.gpt_cli/"
 
 USER_COLOR = colorama.Fore.BLUE 
 SYSTEM_COLOR = colorama.Fore.RED 
-ASSISTANT_COLOR = colorama.Fore.BLACK 
+ASSISTANT_COLOR = colorama.Style.RESET_ALL
 DEFAULT_COLOR = colorama.Style.RESET_ALL
 
 colorama.init(autoreset=True)
@@ -119,7 +119,6 @@ def _display_history_line(chat_name, history):
     start_message = f"{USER_COLOR}{history.get_message_history()[1]['content'][:start_length]}"
     end_message = f"{ASSISTANT_COLOR}{history.get_message_history()[-1]['content'][-end_length:]}"
     print(f"{chat_name}: {start_message}...{end_message}")
-    # print(f"{chat_name[:20]}: {history.get_message_history()[1]['content'][:60]}...{history.get_message_history()[-1]['content'][-60:]}")
 
 def display_history(index, pathname=PATHNAME_MESSAGE_HISTORY, filename=FILENAME_MESSAGE_HISTORY):
     history_list = get_history_list(pathname, filename)
