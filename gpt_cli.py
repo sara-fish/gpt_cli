@@ -34,7 +34,7 @@ if __name__ == "__main__":
     parser.add_argument("-r", "--reply", action="store_true", help="Reply to previous conversation (default is most recent, or select with conversation ID)")
     parser.add_argument("-m", "--model", nargs=1, default=DEFAULT_MODEL_NAME, type=str, help="Model to use ('3' for gpt-3.5-turbo, '4' for gpt-4)")
     parser.add_argument("-c", "--conversation_id", type=int, help="Specify which conversation to reply to or display")
-    parser.add_argument("-s", "--system", nargs=1, default=DEFAULT_SYSTEM_PROMPT, type=str, help="System prompt to use")
+    parser.add_argument("-s", "--system", nargs='?', default=DEFAULT_SYSTEM_PROMPT, type=str, help="System prompt to use")
 
     # Parse and extract args
     args = parser.parse_args()
