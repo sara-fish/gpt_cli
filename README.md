@@ -4,11 +4,13 @@
 
 1. Clone or download this repo
 
-2. Run `./install.sh`
+2. `pip3 install openai` and `pip3 install colorama`
 
-3. Follow the instructions about OPENAI_API_KEY 
+3. Run `./install.sh`
 
-4. Run `gpt "Hello world"`
+4. Follow the instructions about OPENAI_API_KEY 
+
+5. Run `gpt "Hello world"`
 
 ## How to use 
 
