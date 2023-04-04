@@ -116,8 +116,8 @@ def _display_history_line(chat_name, history):
     line_length = get_terminal_size().columns 
     start_length = line_length // 2 - 2 - len(chat_name)
     end_length = line_length // 2 - 2 - len(chat_name)
-    start_message = f"{USER_COLOR}{history.get_message_history()[1]['content'][:start_length]}"
-    end_message = f"{ASSISTANT_COLOR}{history.get_message_history()[-1]['content'][-end_length:]}"
+    start_message = f"{USER_COLOR}{history.get_message_history()[1]['content'][:start_length]}".replace("\n","")
+    end_message = f"{ASSISTANT_COLOR}{history.get_message_history()[-1]['content'][-end_length:]}".replace("\n","")
     print(f"{chat_name}: {start_message}...{end_message}")
 
 def display_history(index, pathname=PATHNAME_MESSAGE_HISTORY, filename=FILENAME_MESSAGE_HISTORY):
