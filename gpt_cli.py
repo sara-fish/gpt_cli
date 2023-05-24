@@ -4,11 +4,14 @@ import os
 import openai
 import argparse
 from datetime import datetime
+import subprocess
 
 import message_history
 
 DEFAULT_MODEL_NAME = "gpt-3.5-turbo"
 DEFAULT_SYSTEM_PROMPT = "You are a helpful, accurate AI assistant who provides BRIEF excellent responses to queries (NEVER say fluff like 'As an AI')."
+
+DEFAULT_FILENAME = "GPT_ATTACHED_CONTEXT.txt"
 
 
 def extract_model_name(input, default=DEFAULT_MODEL_NAME):
@@ -71,11 +74,15 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "-f",
-        "--filename",
-        nargs="?",
-        default=DEFAULT_FILENAME,
-        type=str,
-        help="File with extra material for prompt",
+        "--fileread",
+        action="store_true",
+        help=f"If selected, appends to prompt content from {DEFAULT_FILENAME}",
+    )
+    parser.add_argument(
+        "-w",
+        "--filewrite",
+        action="store_true",
+        help=f"If selected, opens {DEFAULT_FILENAME} in vim to let you paste content in.",
     )
 
     # Parse and extract args
@@ -87,6 +94,8 @@ if __name__ == "__main__":
     model_name = extract_model_name(args.model)
     conv_id = args.conversation_id
     system_prompt = args.system
+    fileread = args.fileread
+    filewrite = args.filewrite
 
     # First handle display mode
     if display_mode:
@@ -94,7 +103,12 @@ if __name__ == "__main__":
             message_history.display_history(conv_id)
         else:
             message_history.display_all_history()
-        exit(1)
+        exit(0)
+
+    # Next handle write mode
+    if filewrite:
+        subprocess.run(["vim", DEFAULT_FILENAME])
+        exit(0)
 
     # Otherwise enter conversation mode
 
@@ -126,7 +140,20 @@ if __name__ == "__main__":
         current_chat_name = str(len(chat_names))
         current_history = message_history.History(current_chat_name, system_prompt)
 
-    current_history.append_user_message(user_prompt)
+    if fileread:
+        try:
+            with open(DEFAULT_FILENAME, "r") as f:
+                fileread_content = f.read()
+        except FileNotFoundError:
+            print(
+                f"Error: {DEFAULT_FILENAME} not found. First run `gpt -w` to write to this file."
+            )
+            exit(1)
+        full_prompt = user_prompt + " Attached context: " + fileread_content
+    else:
+        full_prompt = user_prompt
+
+    current_history.append_user_message(full_prompt)
 
     # Talk to model
 
