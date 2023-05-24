@@ -1,4 +1,4 @@
-# gpt_cli
+# Simple command-line interface for OpenAI's GPT-3.5/4
 
 ## Installation instructions 
 
