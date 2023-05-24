@@ -4,7 +4,7 @@
 
 1. Clone or download this repo
 
-2. `pip3 install openai` and `pip3 install colorama`
+2. `pip install openai` and `pip install colorama`
 
 3. Run `./install.sh`
 
