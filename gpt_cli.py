@@ -22,7 +22,7 @@ def extract_model_name(input, default=DEFAULT_MODEL_NAME):
     if "3" in input:
         model_name = "gpt-3.5-turbo"
     elif "4" in input:
-        model_name = "gpt-4"
+        model_name = "gpt-4-0314"
     else:
         model_name = default
     return model_name
@@ -70,7 +70,7 @@ if __name__ == "__main__":
         nargs="?",
         default=DEFAULT_SYSTEM_PROMPT,
         type=str,
-        help="System prompt to use",
+        help=f'System prompt to use. Default: "{DEFAULT_SYSTEM_PROMPT}"',
     )
     parser.add_argument(
         "-f",
