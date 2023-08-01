@@ -149,7 +149,7 @@ if __name__ == "__main__":
                 f"Error: {DEFAULT_FILENAME} not found. First run `gpt -w` to write to this file."
             )
             exit(1)
-        full_prompt = user_prompt + " Attached context: " + fileread_content
+        full_prompt = user_prompt + fileread_content
     else:
         full_prompt = user_prompt
 
