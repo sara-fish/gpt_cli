@@ -8,7 +8,7 @@ import subprocess
 
 import message_history
 
-DEFAULT_MODEL_NAME = "gpt-3.5-turbo"
+DEFAULT_MODEL_NAME = "gpt-4-0314"
 DEFAULT_SYSTEM_PROMPT = "You are a helpful, accurate AI assistant who provides BRIEF excellent responses to queries (NEVER say fluff like 'As an AI')."
 
 DEFAULT_FILENAME = "GPT_ATTACHED_CONTEXT.txt"
