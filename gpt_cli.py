@@ -160,14 +160,26 @@ if __name__ == "__main__":
     openai.organization = os.getenv("OPENAI_ORGANIZATION")
     openai.api_key = os.getenv("OPENAI_API_KEY")
 
-    completion = openai.ChatCompletion.create(
-        model=model_name, messages=current_history.get_message_history(for_openai=True)
-    )
+    try:
+        completion = openai.ChatCompletion.create(
+            model=model_name,
+            messages=current_history.get_message_history(for_openai=True),
+            stream=True,
+        )
 
-    response = completion.choices[0].message.content
+        response = ""
+        for chunk in completion:
+            chunk_message = chunk["choices"][0]["delta"]
+            chunk_message_str = chunk_message.get("content", "")
+            response += chunk_message_str
+            print(chunk_message_str, end="", flush=True)
 
-    # Print to terminal
-    print(response)
+    except KeyboardInterrupt as _:
+        chunk_message_str = "<KeyboardInterrupt>"
+        response += chunk_message_str
+        print(chunk_message_str, flush=True)
+    else:
+        print()
 
     # Log to history
     if reply_mode:
