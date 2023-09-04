@@ -8,7 +8,10 @@ import subprocess
 
 import message_history
 
-DEFAULT_MODEL_NAME = "gpt-4-0314"
+GPT_4_MODEL_NAME = "gpt-4-0314"
+GPT_3_MODEL_NAME = "gpt-3.5-turbo-0613"
+DEFAULT_MODEL_NAME = GPT_4_MODEL_NAME
+
 DEFAULT_SYSTEM_PROMPT = "You are a helpful, accurate AI assistant who provides BRIEF excellent responses to queries (NEVER say fluff like 'As an AI')."
 
 DEFAULT_FILENAME = "GPT_ATTACHED_CONTEXT.txt"
@@ -19,9 +22,9 @@ def extract_model_name(input, default=DEFAULT_MODEL_NAME):
     Extract the model name from a string input which was inputted via command line.
     Currently only works with gpt-3.5-turbo and gpt-4, because this is in chat mode.
     """
-    if "3" in input:
+    if input == "3":
         model_name = "gpt-3.5-turbo"
-    elif "4" in input:
+    elif input == "4":
         model_name = "gpt-4-0314"
     else:
         model_name = default
@@ -54,9 +57,13 @@ if __name__ == "__main__":
         "-m",
         "--model",
         nargs=1,
-        default=DEFAULT_MODEL_NAME,
+        default="3"
+        if DEFAULT_MODEL_NAME == GPT_3_MODEL_NAME
+        else "4"
+        if DEFAULT_MODEL_NAME == GPT_4_MODEL_NAME
+        else "",
         type=str,
-        help="Model to use ('3' for gpt-3.5-turbo, '4' for gpt-4)",
+        help="Model to use ('3' for gpt-3.5-turbo, '4' for gpt-4-0314)",
     )
     parser.add_argument(
         "-c",
