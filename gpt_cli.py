@@ -96,6 +96,10 @@ if __name__ == "__main__":
         help=f"If selected, opens {DEFAULT_FILENAME} in vim to let you paste content in.",
     )
 
+    parser.add_argument(
+        "-t", "--temperature", help=f"Set the temperature for the query.", type=float
+    )
+
     # Parse and extract args
     args = parser.parse_args()
 
@@ -107,6 +111,7 @@ if __name__ == "__main__":
     system_prompt = args.system
     fileread = args.fileread
     filewrite = args.filewrite
+    temperature = args.temperature
 
     # First handle display mode
     if display_mode:
@@ -172,10 +177,15 @@ if __name__ == "__main__":
     openai.api_key = os.getenv("OPENAI_API_KEY")
 
     try:
+        optional_args = (
+            {"temperature": temperature} if temperature is not None else dict()
+        )
+
         completion = openai.ChatCompletion.create(
             model=model_name,
             messages=current_history.get_message_history(for_openai=True),
             stream=True,
+            **optional_args,
         )
 
         response = ""
