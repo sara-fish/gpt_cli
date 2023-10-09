@@ -7,35 +7,33 @@ from datetime import datetime
 import subprocess
 
 import message_history
+from model_handling import (
+    extract_model_name,
+    uses_legacy_completions,
+    GPT_3_MODEL_NAME,
+    GPT_4_32K_MODEL_NAME,
+    GPT_4_BASE_MODEL_NAME,
+    GPT_4_MODEL_NAME,
+    DEFAULT_MODEL_NAME,
+)
 
-GPT_4_MODEL_NAME = "gpt-4-0314"
-GPT_3_MODEL_NAME = "gpt-3.5-turbo-0613"
-GPT_4_32K_MODEL_NAME = "gpt-4-32k"
-GPT_4_BASE_MODEL_NAME = "gpt-4-base"
-DEFAULT_MODEL_NAME = GPT_4_MODEL_NAME
 
 DEFAULT_SYSTEM_PROMPT = "You are a helpful, accurate AI assistant who provides BRIEF excellent responses to queries (NEVER say fluff like 'As an AI')."
 
 DEFAULT_FILENAME = "GPT_ATTACHED_CONTEXT.txt"
 
 
-def extract_model_name(input, default=DEFAULT_MODEL_NAME):
+def get_org_id(short_model_name: str) -> str:
     """
-    Extract the model name from a string input which was inputted via command line.
-    Currently only works with gpt-3.5-turbo and gpt-4, because this is in chat mode.
+    Check if model-specific organization ID is saved as environment variable.
+    For example, if $OPENAI_ORGANIZATION_32k is saved, uses that as the org id.
+    If no such org id found, defaults back to $OPENAI_ORGANIZATION.
     """
-    model_short_str = input[0]
-    if model_short_str == "3":
-        model_name = GPT_3_MODEL_NAME
-    elif model_short_str == "4":
-        model_name = GPT_4_MODEL_NAME
-    elif model_short_str == "32k":
-        model_name = GPT_4_32K_MODEL_NAME
-    elif model_short_str == "base":
-        model_name = GPT_4_BASE_MODEL_NAME
-    else:
-        model_name = default
-    return model_name
+    org_id_varname = f"OPENAI_ORGANIZATION_{short_model_name}"
+    org_id = os.getenv(org_id_varname)
+    if not org_id:
+        org_id = os.getenv("OPENAI_ORGANIZATION")
+    return org_id
 
 
 if __name__ == "__main__":
@@ -109,7 +107,8 @@ if __name__ == "__main__":
     user_prompt = args.prompt
     reply_mode = args.reply
     display_mode = args.display
-    model_name = extract_model_name(args.model)
+    short_model_name = args.model[0]
+    model_name = extract_model_name(short_model_name)
     conv_id = args.conversation_id
     system_prompt = args.system
     fileread = args.fileread
@@ -157,7 +156,9 @@ if __name__ == "__main__":
             print("Can't reply to empty history.")
     else:
         current_chat_name = str(len(chat_names))
-        current_history = message_history.History(current_chat_name, system_prompt)
+        current_history = message_history.History(
+            current_chat_name, system_prompt, model_name
+        )
 
     if fileread:
         try:
@@ -176,27 +177,47 @@ if __name__ == "__main__":
 
     # Talk to model
 
-    openai.organization = os.getenv("OPENAI_ORGANIZATION")
     openai.api_key = os.getenv("OPENAI_API_KEY")
+    openai.organization = get_org_id(short_model_name)
 
     try:
         optional_args = (
             {"temperature": temperature} if temperature is not None else dict()
         )
 
-        completion = openai.ChatCompletion.create(
-            model=model_name,
-            messages=current_history.get_message_history(for_openai=True),
-            stream=True,
-            **optional_args,
-        )
+        if uses_legacy_completions(model_name):
+            prompt = current_history.get_message_history(
+                for_openai=True,
+                legacy=True,
+            )
+            print(prompt)
+            completion = openai.Completion.create(
+                model=model_name,
+                prompt=prompt,
+                stream=True,
+                max_tokens=4000,
+                **optional_args,
+            )
+            response = ""
+            for chunk in completion:
+                chunk_message_str = chunk["choices"][0]["text"]
+                response += chunk_message_str
+                print(chunk_message_str, end="", flush=True)
 
-        response = ""
-        for chunk in completion:
-            chunk_message = chunk["choices"][0]["delta"]
-            chunk_message_str = chunk_message.get("content", "")
-            response += chunk_message_str
-            print(chunk_message_str, end="", flush=True)
+        else:
+            completion = openai.ChatCompletion.create(
+                model=model_name,
+                messages=current_history.get_message_history(for_openai=True),
+                stream=True,
+                **optional_args,
+            )
+
+            response = ""
+            for chunk in completion:
+                chunk_message = chunk["choices"][0]["delta"]
+                chunk_message_str = chunk_message.get("content", "")
+                response += chunk_message_str
+                print(chunk_message_str, end="", flush=True)
 
     except KeyboardInterrupt as _:
         chunk_message_str = "<KeyboardInterrupt>"
