@@ -84,7 +84,8 @@ class History:
             for line in self.message_history:
                 color = _get_line_color(line["role"])
                 content = line["content"]
-                print(f"{color}{content}")
+                print(f"{color}{content}", end="")
+            print()
 
 
 def _get_line_color(role):

@@ -199,10 +199,13 @@ if __name__ == "__main__":
                 **optional_args,
             )
             response = ""
-            for chunk in completion:
-                chunk_message_str = chunk["choices"][0]["text"]
-                response += chunk_message_str
-                print(chunk_message_str, end="", flush=True)
+            try:
+                for chunk in completion:
+                    chunk_message_str = chunk["choices"][0]["text"]
+                    response += chunk_message_str
+                    print(chunk_message_str, end="", flush=True)
+            except KeyboardInterrupt:
+                print("<KeyboardInterrupt>", flush=True)
 
         else:
             completion = openai.ChatCompletion.create(
