@@ -157,7 +157,7 @@ if __name__ == "__main__":
     else:
         current_chat_name = str(len(chat_names))
         current_history = message_history.History(
-            current_chat_name, system_prompt, model_name
+            current_chat_name, system_prompt, uses_legacy_completions(model_name)
         )
 
     if fileread:

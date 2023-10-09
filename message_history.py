@@ -2,7 +2,7 @@ import pickle
 from pathlib import Path
 import colorama
 from shutil import get_terminal_size
-from model_handling import uses_legacy_completions
+from model_handling import uses_legacy_completions, GPT_4_BASE_MODEL_NAME
 
 # This provides functionality for saving and displaying message history.
 
@@ -19,12 +19,21 @@ colorama.init(autoreset=True)
 
 
 class History:
-    def __init__(self, chat_name, system_prompt, model_name):
+    def __init__(self, chat_name, system_prompt, legacy):
         self.chat_name = chat_name
-        if uses_legacy_completions(model_name):
+        self.legacy = legacy
+        if self.legacy:
             self.message_history = []
         else:
             self.message_history = [{"role": "system", "content": system_prompt}]
+
+    def is_legacy(self):
+        try:
+            return self.legacy
+        except AttributeError:
+            # Older part of message history, prior to introduction of this feature.
+            self.legacy = False
+            return self.legacy
 
     def get_message_history(self, for_openai=False, legacy=False):
         if for_openai:
@@ -53,16 +62,29 @@ class History:
             {"role": "assistant", "content": response, "model_name": model_name}
         )
 
-    def display(self):
-        pad_len = len("gpt-3.5-turbo:")
+    def _compute_pad_len(self):
+        models_in_conversation = {"system"}
         for line in self.message_history:
-            color = _get_line_color(line["role"])
-            role_name = (
-                line["role"] if line["role"] != "assistant" else line["model_name"]
-            )
-            role = (role_name + ":").ljust(pad_len)
-            content = line["content"]
-            print(f"{color}{role} {content}")
+            if line["role"] == "assistant":
+                models_in_conversation.add(line["model_name"])
+        return max(map(len, models_in_conversation)) + 1
+
+    def display(self):
+        if not self.is_legacy():
+            pad_len = self._compute_pad_len()
+            for line in self.message_history:
+                color = _get_line_color(line["role"])
+                role_name = (
+                    line["role"] if line["role"] != "assistant" else line["model_name"]
+                )
+                role = (role_name + ":").ljust(pad_len)
+                content = line["content"]
+                print(f"{color}{role} {content}")
+        else:
+            for line in self.message_history:
+                color = _get_line_color(line["role"])
+                content = line["content"]
+                print(f"{color}{content}")
 
 
 def _get_line_color(role):
