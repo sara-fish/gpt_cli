@@ -11,6 +11,7 @@ import message_history
 GPT_4_MODEL_NAME = "gpt-4-0314"
 GPT_3_MODEL_NAME = "gpt-3.5-turbo-0613"
 GPT_4_32K_MODEL_NAME = "gpt-4-32k"
+GPT_4_BASE_MODEL_NAME = "gpt-4-base"
 DEFAULT_MODEL_NAME = GPT_4_MODEL_NAME
 
 DEFAULT_SYSTEM_PROMPT = "You are a helpful, accurate AI assistant who provides BRIEF excellent responses to queries (NEVER say fluff like 'As an AI')."
@@ -30,6 +31,8 @@ def extract_model_name(input, default=DEFAULT_MODEL_NAME):
         model_name = GPT_4_MODEL_NAME
     elif model_short_str == "32k":
         model_name = GPT_4_32K_MODEL_NAME
+    elif model_short_str == "base":
+        model_name = GPT_4_BASE_MODEL_NAME
     else:
         model_name = default
     return model_name
@@ -67,7 +70,7 @@ if __name__ == "__main__":
         if DEFAULT_MODEL_NAME == GPT_4_MODEL_NAME
         else "",
         type=str,
-        help="Model to use ('3' for gpt-3.5-turbo, '4' for gpt-4-0314, '32k' for gpt-4-32k)",
+        help="Model to use ('3' for gpt-3.5-turbo, '4' for gpt-4-0314, '32k' for gpt-4-32k, 'base' for gpt-4-base)",
     )
     parser.add_argument(
         "-c",
