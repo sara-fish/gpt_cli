@@ -2,7 +2,6 @@ import pickle
 from pathlib import Path
 import colorama
 from shutil import get_terminal_size
-from model_handling import uses_legacy_completions, GPT_4_BASE_MODEL_NAME
 
 # This provides functionality for saving and displaying message history.
 
