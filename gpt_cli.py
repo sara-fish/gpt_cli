@@ -1,7 +1,7 @@
-#!/bin/python3
+#!/usr/bin/env python3
 
 import os
-import openai
+from openai import OpenAI
 import argparse
 from datetime import datetime
 import subprocess
@@ -10,11 +10,8 @@ import message_history
 from model_handling import (
     extract_model_name,
     uses_legacy_completions,
-    GPT_3_MODEL_NAME,
-    GPT_4_32K_MODEL_NAME,
-    GPT_4_BASE_MODEL_NAME,
     GPT_4_MODEL_NAME,
-    DEFAULT_MODEL_NAME,
+    MODEL_NAME_TO_ABBREV_LEGEND,
 )
 
 
@@ -61,14 +58,10 @@ if __name__ == "__main__":
     parser.add_argument(
         "-m",
         "--model",
-        nargs=1,
-        default="3"
-        if DEFAULT_MODEL_NAME == GPT_3_MODEL_NAME
-        else "4"
-        if DEFAULT_MODEL_NAME == GPT_4_MODEL_NAME
-        else "",
+        nargs="?",
+        default=GPT_4_MODEL_NAME,
         type=str,
-        help="Model to use ('3' for gpt-3.5-turbo, '4' for gpt-4-0314, '32k' for gpt-4-32k, 'base' for gpt-4-base)",
+        help=f"Model to use: {MODEL_NAME_TO_ABBREV_LEGEND}",
     )
     parser.add_argument(
         "-c",
@@ -107,7 +100,7 @@ if __name__ == "__main__":
     user_prompt = args.prompt
     reply_mode = args.reply
     display_mode = args.display
-    short_model_name = args.model[0]
+    short_model_name = args.model
     model_name = extract_model_name(short_model_name)
     conv_id = args.conversation_id
     system_prompt = args.system
@@ -177,8 +170,10 @@ if __name__ == "__main__":
 
     # Talk to model
 
-    openai.api_key = os.getenv("OPENAI_API_KEY")
-    openai.organization = get_org_id(short_model_name)
+    client = OpenAI(
+        api_key=os.getenv("OPENAI_API_KEY"),
+        organization=get_org_id(short_model_name),
+    )
 
     try:
         optional_args = (
@@ -190,8 +185,7 @@ if __name__ == "__main__":
                 for_openai=True,
                 legacy=True,
             )
-            print(prompt)
-            completion = openai.Completion.create(
+            completion = client.completions.create(
                 model=model_name,
                 prompt=prompt,
                 stream=True,
@@ -200,12 +194,12 @@ if __name__ == "__main__":
             )
             response = ""
             for chunk in completion:
-                chunk_message_str = chunk["choices"][0]["text"]
+                chunk_message_str = chunk.choices[0].text
                 response += chunk_message_str
                 print(chunk_message_str, end="", flush=True)
 
         else:
-            completion = openai.ChatCompletion.create(
+            completion = client.chat.completions.create(
                 model=model_name,
                 messages=current_history.get_message_history(for_openai=True),
                 stream=True,
@@ -214,8 +208,10 @@ if __name__ == "__main__":
 
             response = ""
             for chunk in completion:
-                chunk_message = chunk["choices"][0]["delta"]
-                chunk_message_str = chunk_message.get("content", "")
+                chunk_message = chunk.choices[0].delta
+                chunk_message_str = (
+                    chunk_message.content if chunk_message.content is not None else ""
+                )
                 response += chunk_message_str
                 print(chunk_message_str, end="", flush=True)
 
