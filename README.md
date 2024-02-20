@@ -10,33 +10,33 @@
 
 4. Follow the instructions about `OPENAI_API_KEY`
 
-5. Run `gpt "Hello world"`
+5. Run `ask "Hello world"`
 
 ## Basic usage
 
 Display help:
 
-`gpt -h`
+`ask -h`
 
 Make a query to GPT-3.5: 
 
-`gpt "What is the fifth prime number?" -m 3`
+`ask "What is the fifth prime number?" -m 3`
 
 Make a query to GPT-4:
 
-`gpt "What is the fifth prime number?" -m 4`
+`ask "What is the fifth prime number?" -m 4`
 
 Display chat history: 
 
-`gpt -d`
+`ask -d`
 
 Display history of the chat with ID 0:
 
-`gpt -d -c 0`
+`ask -d -c 0`
 
 Reply to the last conversation: 
 
-`gpt "And the next one?" -r`
+`ask "And the next one?" -r`
 
 ## Using file attachment feature
 
@@ -44,13 +44,13 @@ If you have additional context you would like to attach to your prompt (e.g. cod
 
 **Step 1: write context to file**
 
-`gpt -w`
+`ask -w`
 
 This will open a file `GPT_ATTACHED_CONTEXT.txt` in vim. Paste in the context you want, save and exit. 
 
 **Step 2: query model**
 
-`gpt -f "How do I fix the following code?"`
+`ask -f "How do I fix the following code?"`
 
 When the `-f` flag is enabled, the text in `GPT_ATTACHED_CONTEXT.txt` will be appended to the end of your prompt. 
 

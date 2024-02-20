@@ -10,9 +10,9 @@ if [ ! -d ~/bin ]; then
     mkdir ~/bin
 fi
 
-# Create gpt symlink in ~/bin to gpt_cli.py
-if [ ! -f ~/bin/gpt ]; then
-    ln -s $(pwd)/gpt_cli.py ~/bin/gpt
+# Create ask symlink in ~/bin to gpt_cli.py
+if [ ! -f ~/bin/ask ]; then
+    ln -s $(pwd)/gpt_cli.py ~/bin/ask
 fi
 
 # Add ~/bin to $PATH environment variable if not already there
