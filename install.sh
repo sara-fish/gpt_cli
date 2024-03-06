@@ -25,7 +25,8 @@ echo "Successfully installed.
 Before using, you still need to add these lines to ~/.bashrc:
 export OPENAI_API_KEY     =<your API key>
 export OPENAI_ORGANIZATION=<your organization ID>
-Find this information at https://platform.openai.com/account/api-keys and https://platform.openai.com/account/org-settings
+export ANTHROPIC_API_KEY  =<your API key>
+Find this information at https://platform.openai.com/account/api-keys and https://platform.openai.com/account/org-settings and https://console.anthropic.com/settings/keys
 
 Then run 
 source ~/.bashrc"

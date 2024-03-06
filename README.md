@@ -1,14 +1,19 @@
-# Simple command-line interface for OpenAI's GPT-3.5/4
+# Simple command-line interface for OpenAI and Anthropic API
 
 ## Installation instructions 
 
 1. Clone or download this repo
 
-2. `pip install openai` and `pip install colorama`
+2. Install necessary dependencies:
+```
+pip install openai
+pip install colorama
+pip install anthropic
+```
 
 3. Run `./install.sh`
 
-4. Follow the instructions about `OPENAI_API_KEY`
+4. Follow the instructions about `OPENAI_API_KEY` and `ANTHROPIC_API_KEY`
 
 5. Run `ask "Hello world"`
 
@@ -25,6 +30,10 @@ Make a query to GPT-3.5:
 Make a query to GPT-4:
 
 `ask "What is the fifth prime number?" -m 4`
+
+Make a query to Claude 3:
+
+`ask "What is the fifth prime number?" -m c`
 
 Display chat history: 
 
