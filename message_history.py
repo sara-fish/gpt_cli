@@ -1,5 +1,6 @@
 import pickle
 from pathlib import Path
+from typing import Literal
 import colorama
 from shutil import get_terminal_size
 
@@ -34,19 +35,44 @@ class History:
             self.legacy = False
             return self.legacy
 
-    def get_message_history(self, for_openai=False, legacy=False):
-        if for_openai:
-            if not legacy:
-                return [
+    def get_message_history(
+        self, platform: Literal["legacy", "openai", "anthropic", None] = None
+    ):
+        """
+        If legacy: return message history as string
+        If openai: return message history as list of dicts
+        If anthropic: return tuple of (system prompt, message history as list of dicts w/o system prompt)
+        Else: return full message history object (which has some other stuff attached)
+        """
+        if platform == "legacy":
+            # Must convert to string
+            prompt = ""
+            for line in self.message_history:
+                prompt += line["content"]
+            return prompt
+        elif platform == "openai":
+            return [
+                {"role": line["role"], "content": line["content"]}
+                for line in self.message_history
+            ]
+        elif platform == "anthropic":
+            if self.message_history[0]["role"] == "system":
+                system_prompt = self.message_history[0]["content"]
+                other_messages = [
+                    {"role": line["role"], "content": line["content"]}
+                    for line in self.message_history[1:]
+                ]
+            else:
+                system_prompt = None
+                other_messages = [
                     {"role": line["role"], "content": line["content"]}
                     for line in self.message_history
                 ]
-            else:
-                # Must convert to string
-                prompt = ""
-                for line in self.message_history:
-                    prompt += line["content"]
-                return prompt
+            # assert there is no system prompt in the other messages (this shouldn't happen)
+            for line in other_messages:
+                assert line["role"] != "system"
+            # return messages and system prompt
+            return system_prompt, other_messages
         else:
             return self.message_history
 

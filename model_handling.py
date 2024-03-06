@@ -1,4 +1,7 @@
 # GPT-4 models
+from typing import Literal
+
+
 GPT_4_0314_MODEL_NAME = "gpt-4-0314"
 GPT_4_0613_MODEL_NAME = "gpt-4-0613"
 GPT_4_MODEL_NAME = "gpt-4"
@@ -20,6 +23,27 @@ GPT_4_32K_MODEL_NAME = "gpt-4-32k"
 
 # GPT-4-base
 GPT_4_BASE_MODEL_NAME = "gpt-4-base"
+
+OPENAI_MODELS = [
+    GPT_4_0314_MODEL_NAME,
+    GPT_4_0613_MODEL_NAME,
+    GPT_4_MODEL_NAME,
+    GPT_4_TURBO_1106_MODEL_NAME,
+    GPT_4_TURBO_0125_MODEL_NAME,
+    GPT_4_TURBO_MODEL_NAME,
+    GPT_35_TURBO_0613_MODEL_NAME,
+    GPT_35_TURBO_0125_MODEL_NAME,
+    GPT_35_MODEL_NAME,
+    GPT_4_32K_0314_MODEL_NAME,
+    GPT_4_32K_0613_MODEL_NAME,
+    GPT_4_32K_MODEL_NAME,
+    GPT_4_BASE_MODEL_NAME,
+]
+
+# Anthropic models
+CLAUDE_3_OPUS_MODEL_NAME = "claude-3-opus-20240229"
+
+ANTHROPIC_MODELS = [CLAUDE_3_OPUS_MODEL_NAME]
 
 
 def uses_legacy_completions(model_name: str) -> bool:
@@ -43,6 +67,7 @@ MODEL_NAME_TO_ABBREV = {
     GPT_4_32K_0314_MODEL_NAME: ["32k-0314"],
     GPT_4_32K_0613_MODEL_NAME: ["32k-0613"],
     GPT_4_BASE_MODEL_NAME: ["base"],
+    CLAUDE_3_OPUS_MODEL_NAME: ["claude", "c"],
 }
 
 MODEL_NAME_TO_ABBREV_LEGEND = ", ".join(
@@ -62,3 +87,12 @@ def extract_model_name(model_short_str):
             return model_name
     else:
         raise NotImplementedError(f"Can't recognize model name {model_short_str}")
+
+
+def model_name_to_provider(model_name: str) -> Literal["anthropic", "openai"]:
+    if model_name in ANTHROPIC_MODELS:
+        return "anthropic"
+    elif model_name in OPENAI_MODELS:
+        return "openai"
+    else:
+        raise NotImplementedError(f"unrecognized {model_name}")

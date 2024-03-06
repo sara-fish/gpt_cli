@@ -2,6 +2,7 @@
 
 import os
 from openai import OpenAI
+import anthropic
 import argparse
 from datetime import datetime
 import subprocess
@@ -12,6 +13,7 @@ from model_handling import (
     uses_legacy_completions,
     GPT_4_MODEL_NAME,
     MODEL_NAME_TO_ABBREV_LEGEND,
+    model_name_to_provider,
 )
 
 
@@ -20,7 +22,7 @@ DEFAULT_SYSTEM_PROMPT = "You are a helpful, accurate AI assistant who provides B
 DEFAULT_FILENAME = "GPT_ATTACHED_CONTEXT.txt"
 
 
-def get_org_id(short_model_name: str) -> str:
+def get_openai_org_id(short_model_name: str) -> str:
     """
     Check if model-specific organization ID is saved as environment variable.
     For example, if $OPENAI_ORGANIZATION_32k is saved, uses that as the org id.
@@ -168,57 +170,82 @@ if __name__ == "__main__":
 
     current_history.append_user_message(full_prompt)
 
+    optional_args = {"temperature": temperature} if temperature is not None else dict()
+
     # Talk to model
 
-    client = OpenAI(
-        api_key=os.getenv("OPENAI_API_KEY"),
-        organization=get_org_id(short_model_name),
-    )
+    provider = model_name_to_provider(model_name)
 
-    try:
-        optional_args = (
-            {"temperature": temperature} if temperature is not None else dict()
+    if provider == "anthropic":
+        client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+
+        system_prompt, messages = current_history.get_message_history(
+            platform="anthropic"
         )
 
-        if uses_legacy_completions(model_name):
-            prompt = current_history.get_message_history(
-                for_openai=True,
-                legacy=True,
-            )
-            completion = client.completions.create(
-                model=model_name,
-                prompt=prompt,
-                stream=True,
-                max_tokens=4000,
-                **optional_args,
-            )
-            response = ""
-            for chunk in completion:
-                chunk_message_str = chunk.choices[0].text
-                response += chunk_message_str
-                print(chunk_message_str, end="", flush=True)
-
+        if system_prompt is None:
+            messages_dict = {"messages": messages}
         else:
-            completion = client.chat.completions.create(
-                model=model_name,
-                messages=current_history.get_message_history(for_openai=True),
-                stream=True,
-                **optional_args,
-            )
+            messages_dict = {"system": system_prompt, "messages": messages}
 
-            response = ""
-            for chunk in completion:
-                chunk_message = chunk.choices[0].delta
-                chunk_message_str = (
-                    chunk_message.content if chunk_message.content is not None else ""
+        completion = client.messages.create(
+            model=model_name,
+            max_tokens=4000,
+            **messages_dict,
+            **optional_args,
+        )
+
+        response = completion.content[0].text
+
+        print(response)
+
+    elif provider == "openai":
+
+        client = OpenAI(
+            api_key=os.getenv("OPENAI_API_KEY"),
+            organization=get_openai_org_id(short_model_name),
+        )
+
+        try:
+
+            if uses_legacy_completions(model_name):
+                prompt = current_history.get_message_history(platform="legacy")
+                completion = client.completions.create(
+                    model=model_name,
+                    prompt=prompt,
+                    stream=True,
+                    max_tokens=4000,
+                    **optional_args,
                 )
-                response += chunk_message_str
-                print(chunk_message_str, end="", flush=True)
+                response = ""
+                for chunk in completion:
+                    chunk_message_str = chunk.choices[0].text
+                    response += chunk_message_str
+                    print(chunk_message_str, end="", flush=True)
 
-    except KeyboardInterrupt:
-        print("<KeyboardInterrupt>", flush=True)
-    else:
-        print()
+            else:
+                completion = client.chat.completions.create(
+                    model=model_name,
+                    messages=current_history.get_message_history(platform="openai"),
+                    stream=True,
+                    **optional_args,
+                )
+
+                response = ""
+                for chunk in completion:
+                    chunk_message = chunk.choices[0].delta
+                    chunk_message_str = (
+                        chunk_message.content
+                        if chunk_message.content is not None
+                        else ""
+                    )
+                    response += chunk_message_str
+                    print(chunk_message_str, end="", flush=True)
+
+        except KeyboardInterrupt:
+            print("<KeyboardInterrupt>", flush=True)
+        else:
+            print()
 
     # Log to history
     if reply_mode:
