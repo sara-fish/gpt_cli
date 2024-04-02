@@ -177,27 +177,30 @@ if __name__ == "__main__":
     provider = model_name_to_provider(model_name)
 
     if provider == "anthropic":
-        client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+        try:
+            client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
 
-        system_prompt, messages = current_history.get_message_history(
-            platform="anthropic"
-        )
+            system_prompt, messages = current_history.get_message_history(
+                platform="anthropic"
+            )
 
-        if system_prompt is None:
-            messages_dict = {"messages": messages}
+            if system_prompt is None:
+                messages_dict = {"messages": messages}
+            else:
+                messages_dict = {"system": system_prompt, "messages": messages}
+
+            response = ""
+
+            with client.messages.stream(
+                model=model_name, max_tokens=4000, **messages_dict, **optional_args
+            ) as stream:
+                for text in stream.text_stream:
+                    response += text
+                    print(text, end="", flush=True)
+        except KeyboardInterrupt:
+            print("<KeyboardInterrupt>", flush=True)
         else:
-            messages_dict = {"system": system_prompt, "messages": messages}
-
-        completion = client.messages.create(
-            model=model_name,
-            max_tokens=4000,
-            **messages_dict,
-            **optional_args,
-        )
-
-        response = completion.content[0].text
-
-        print(response)
+            print()
 
     elif provider == "openai":
 
@@ -262,4 +265,7 @@ if __name__ == "__main__":
         f"time: {datetime.now().strftime('%Y-%m-%d-%H:%M:%S')}\n"
     )
     message_history.write_to_log(f"prompt: {user_prompt}\n")
-    message_history.write_to_log(str(completion) + "\n\n")
+    if provider == "anthropic":
+        message_history.write_to_log(str(response) + "\n\n")
+    else:
+        message_history.write_to_log(str(completion) + "\n\n")
