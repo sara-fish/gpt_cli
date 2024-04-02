@@ -17,7 +17,7 @@ from model_handling import (
 )
 
 
-DEFAULT_SYSTEM_PROMPT = "You are a helpful, accurate AI assistant who provides BRIEF excellent responses to queries (NEVER say fluff like 'As an AI')."
+DEFAULT_SYSTEM_PROMPT = """Your task is to provide high-quality thoughtful responses. The user has a PhD in mathematics and computer science. When the user asks you about math, give intuition and then be rigorous (using formulas/equations when needed). When the user asks you to write code, write the code in one big block. If the code is simple, just write the code and nothing else. If the code is complex, explain your reasoning first (2-3 sentences). When the user asks for writing advice, give multiple options, and use academic language. NEVER say anything like 'As an AI', 'it's important to note', or 'it depends on the context'. Don't end with a summary or caveats."""
 
 DEFAULT_FILENAME = "GPT_ATTACHED_CONTEXT.txt"
 
