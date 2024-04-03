@@ -54,9 +54,9 @@ def uses_legacy_completions(model_name: str) -> bool:
 
 
 MODEL_NAME_TO_ABBREV = {
-    GPT_4_0314_MODEL_NAME: ["4-0314", "4-old"],
+    GPT_4_0314_MODEL_NAME: ["4-0314", "4-old", "4"],
     GPT_4_0613_MODEL_NAME: ["4-0613"],
-    GPT_4_MODEL_NAME: ["4"],
+    GPT_4_MODEL_NAME: ["4-new"],
     GPT_4_TURBO_1106_MODEL_NAME: ["4t-1106"],
     GPT_4_TURBO_0125_MODEL_NAME: ["4t-0125"],
     GPT_4_TURBO_MODEL_NAME: ["4t", "turbo"],
