@@ -42,8 +42,14 @@ OPENAI_MODELS = [
 
 # Anthropic models
 CLAUDE_3_OPUS_MODEL_NAME = "claude-3-opus-20240229"
+CLAUDE_3_SONNET_MODEL_NAME = "claude-3-sonnet-20240229"
+CLAUDE_3_HAIKU_MODEL_NAME = "claude-3-haiku-20240307"
 
-ANTHROPIC_MODELS = [CLAUDE_3_OPUS_MODEL_NAME]
+ANTHROPIC_MODELS = [
+    CLAUDE_3_OPUS_MODEL_NAME,
+    CLAUDE_3_SONNET_MODEL_NAME,
+    CLAUDE_3_HAIKU_MODEL_NAME,
+]
 
 
 def uses_legacy_completions(model_name: str) -> bool:
@@ -67,7 +73,9 @@ MODEL_NAME_TO_ABBREV = {
     GPT_4_32K_0314_MODEL_NAME: ["32k-0314"],
     GPT_4_32K_0613_MODEL_NAME: ["32k-0613"],
     GPT_4_BASE_MODEL_NAME: ["base"],
-    CLAUDE_3_OPUS_MODEL_NAME: ["claude", "c"],
+    CLAUDE_3_OPUS_MODEL_NAME: ["claude3", "co", "c"],
+    CLAUDE_3_SONNET_MODEL_NAME: ["claude3-sonnet", "cs"],
+    CLAUDE_3_HAIKU_MODEL_NAME: ["claude3-haiku", "ch"],
 }
 
 MODEL_NAME_TO_ABBREV_LEGEND = ", ".join(
