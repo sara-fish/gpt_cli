@@ -11,6 +11,9 @@ GPT_4_TURBO_1106_MODEL_NAME = "gpt-4-1106-preview"
 GPT_4_TURBO_0125_MODEL_NAME = "gpt-4-0125-preview"
 GPT_4_TURBO_MODEL_NAME = "gpt-4-turbo-preview"
 
+# GPT-4o
+GPT_4o_MODEL_NAME = "gpt-4o-2024-05-13"
+
 # GPT-3.5-turbo
 GPT_35_TURBO_0613_MODEL_NAME = "gpt-3.5-turbo-0613"
 GPT_35_TURBO_0125_MODEL_NAME = "gpt-3.5-turbo-0125"
@@ -38,6 +41,7 @@ OPENAI_MODELS = [
     GPT_4_32K_0613_MODEL_NAME,
     GPT_4_32K_MODEL_NAME,
     GPT_4_BASE_MODEL_NAME,
+    GPT_4o_MODEL_NAME,
 ]
 
 # Anthropic models
@@ -73,6 +77,7 @@ MODEL_NAME_TO_ABBREV = {
     GPT_4_32K_0314_MODEL_NAME: ["32k-0314"],
     GPT_4_32K_0613_MODEL_NAME: ["32k-0613"],
     GPT_4_BASE_MODEL_NAME: ["base"],
+    GPT_4o_MODEL_NAME: ["4o"],
     CLAUDE_3_OPUS_MODEL_NAME: ["claude3", "co", "c"],
     CLAUDE_3_SONNET_MODEL_NAME: ["claude3-sonnet", "cs"],
     CLAUDE_3_HAIKU_MODEL_NAME: ["claude3-haiku", "ch"],
