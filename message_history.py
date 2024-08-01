@@ -36,12 +36,13 @@ class History:
             return self.legacy
 
     def get_message_history(
-        self, platform: Literal["legacy", "openai", "anthropic", None] = None
+        self, platform: Literal["legacy", "openai", "anthropic", "google", None] = None
     ):
         """
         If legacy: return message history as string
         If openai: return message history as list of dicts
         If anthropic: return tuple of (system prompt, message history as list of dicts w/o system prompt)
+        If google: return tuple of (system prompt, message history), where 'assistant' is replaced with 'model' in role name
         Else: return full message history object (which has some other stuff attached)
         """
         if platform == "legacy":
@@ -55,7 +56,7 @@ class History:
                 {"role": line["role"], "content": line["content"]}
                 for line in self.message_history
             ]
-        elif platform == "anthropic":
+        elif platform == "anthropic" or platform == "google":
             if self.message_history[0]["role"] == "system":
                 system_prompt = self.message_history[0]["content"]
                 other_messages = [
@@ -71,6 +72,11 @@ class History:
             # assert there is no system prompt in the other messages (this shouldn't happen)
             for line in other_messages:
                 assert line["role"] != "system"
+            # if google, replace 'assistant' with 'model' role name
+            if platform == "google":
+                for line in other_messages:
+                    if line["role"] == "assistant":
+                        line["role"] = "model"
             # return messages and system prompt
             return system_prompt, other_messages
         else:

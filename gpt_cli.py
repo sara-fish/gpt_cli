@@ -2,6 +2,7 @@
 
 import os
 from openai import OpenAI
+import google.generativeai as genai
 import anthropic
 import argparse
 from datetime import datetime
@@ -93,7 +94,7 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
-        "-t", "--temperature", help=f"Set the temperature for the query.", type=float
+        "-t", "--temperature", help="Set the temperature for the query.", type=float
     )
 
     # Parse and extract args
@@ -112,7 +113,7 @@ if __name__ == "__main__":
 
     # First handle display mode
     if display_mode:
-        if conv_id != None:
+        if conv_id is not None:
             message_history.display_history(conv_id)
         else:
             message_history.display_all_history()
@@ -125,7 +126,7 @@ if __name__ == "__main__":
 
     # Otherwise enter conversation mode
 
-    if user_prompt == None:
+    if user_prompt is None:
         parser.print_help()
         exit(1)
 
@@ -140,7 +141,7 @@ if __name__ == "__main__":
     # Get current chat name and history
     if reply_mode:
         # If conv_id specified, reply to that, otherwise reply to most recent conversation
-        if conv_id != None:
+        if conv_id is not None:
             reply_index = conv_id
         else:
             reply_index = -1
@@ -197,6 +198,40 @@ if __name__ == "__main__":
                 for text in stream.text_stream:
                     response += text
                     print(text, end="", flush=True)
+        except KeyboardInterrupt:
+            print("<KeyboardInterrupt>", flush=True)
+        else:
+            print()
+
+    elif provider == "google":
+        try:
+
+            system_prompt, messages = current_history.get_message_history(
+                platform="google"
+            )
+
+            genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
+            client = genai.GenerativeModel(
+                model_name=model_name, system_instruction=system_prompt
+            )
+
+            messages_for_google = [
+                {"role": message["role"], "parts": message["content"]}
+                for message in messages
+            ]
+
+            completion = client.generate_content(
+                contents=messages_for_google,
+                generation_config=optional_args,
+                stream=True,
+            )
+
+            response = ""
+
+            for chunk in completion:
+                response += chunk.text
+                print(chunk.text, end="", flush=True)
+
         except KeyboardInterrupt:
             print("<KeyboardInterrupt>", flush=True)
         else:
@@ -265,7 +300,7 @@ if __name__ == "__main__":
         f"time: {datetime.now().strftime('%Y-%m-%d-%H:%M:%S')}\n"
     )
     message_history.write_to_log(f"prompt: {user_prompt}\n")
-    if provider == "anthropic":
-        message_history.write_to_log(str(response) + "\n\n")
-    else:
+    message_history.write_to_log(f"model: {model_name}\n")
+    message_history.write_to_log(f"response: {response}\n\n")
+    if provider == "google":
         message_history.write_to_log(str(completion) + "\n\n")

@@ -58,6 +58,13 @@ ANTHROPIC_MODELS = [
     CLAUDE_35_SONNET_MODEL_NAME,
 ]
 
+# Google models
+
+GEMINI_15_PRO_MODEL_NAME = "gemini-1.5-pro-001"
+GEMINI_15_FLASH_MODEL_NAME = "gemini-1.5-flash-001"
+
+GOOGLE_MODELS = [GEMINI_15_PRO_MODEL_NAME, GEMINI_15_FLASH_MODEL_NAME]
+
 
 def uses_legacy_completions(model_name: str) -> bool:
     if model_name == GPT_4_BASE_MODEL_NAME:
@@ -85,6 +92,8 @@ MODEL_NAME_TO_ABBREV = {
     CLAUDE_3_SONNET_MODEL_NAME: ["claude3-sonnet", "cs"],
     CLAUDE_3_HAIKU_MODEL_NAME: ["claude3-haiku", "ch"],
     CLAUDE_35_SONNET_MODEL_NAME: ["claude3.5-sonnet", "c3.5", "c"],
+    GEMINI_15_PRO_MODEL_NAME: ["g", "gp", "gemini1.5-pro"],
+    GEMINI_15_FLASH_MODEL_NAME: ["gf", "gemini1.5-flash"],
 }
 
 MODEL_NAME_TO_ABBREV_LEGEND = ", ".join(
@@ -106,10 +115,12 @@ def extract_model_name(model_short_str):
         raise NotImplementedError(f"Can't recognize model name {model_short_str}")
 
 
-def model_name_to_provider(model_name: str) -> Literal["anthropic", "openai"]:
+def model_name_to_provider(model_name: str) -> Literal["anthropic", "openai", "google"]:
     if model_name in ANTHROPIC_MODELS:
         return "anthropic"
     elif model_name in OPENAI_MODELS:
         return "openai"
+    elif model_name in GOOGLE_MODELS:
+        return "google"
     else:
         raise NotImplementedError(f"unrecognized {model_name}")
