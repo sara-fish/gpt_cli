@@ -11,6 +11,8 @@ import subprocess
 import message_history
 from model_handling import (
     extract_model_name,
+    get_system_name,
+    lacks_streaming_support,
     uses_legacy_completions,
     GPT_4_MODEL_NAME,
     MODEL_NAME_TO_ABBREV_LEGEND,
@@ -260,6 +262,19 @@ if __name__ == "__main__":
                     chunk_message_str = chunk.choices[0].text
                     response += chunk_message_str
                     print(chunk_message_str, end="", flush=True)
+
+            elif lacks_streaming_support(model_name):
+
+                completion = client.chat.completions.create(
+                    model=model_name,
+                    messages=current_history.get_message_history(
+                        platform="openai_o1", system_name=get_system_name(model_name)
+                    ),
+                    **optional_args,
+                )
+
+                response = completion.choices[0].message.content
+                print(response)
 
             else:
                 completion = client.chat.completions.create(

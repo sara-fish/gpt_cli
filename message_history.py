@@ -36,7 +36,9 @@ class History:
             return self.legacy
 
     def get_message_history(
-        self, platform: Literal["legacy", "openai", "anthropic", "google", None] = None
+        self,
+        platform: Literal["legacy", "openai", "anthropic", "google", None] = None,
+        system_name: str = "system",
     ):
         """
         If legacy: return message history as string
@@ -56,6 +58,15 @@ class History:
                 {"role": line["role"], "content": line["content"]}
                 for line in self.message_history
             ]
+        elif platform == "openai_o1":
+            # for some godforsaken reason, they renamed system differently for o1 and o1-mini
+            output = []
+            for line in self.message_history:
+                if line["role"] == "system":
+                    output.append({"role": system_name, "content": line["content"]})
+                else:
+                    output.append({"role": line["role"], "content": line["content"]})
+            return output
         elif platform == "anthropic" or platform == "google":
             if self.message_history[0]["role"] == "system":
                 system_prompt = self.message_history[0]["content"]
