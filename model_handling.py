@@ -68,10 +68,21 @@ def lacks_streaming_support(model_name: str) -> bool:
         return False
 
 
+def is_reasoning_model(model_name: str) -> bool:
+    if (
+        model_name == O1_MODEL_NAME
+        or model_name == O1_MINI_MODEL_NAME
+        or model_name == O3_MINI_MODEL_NAME
+    ):
+        return True
+    else:
+        return False
+
+
 def get_system_name(model_name: str) -> str:
-    if model_name == O1_MODEL_NAME:
+    if model_name == O1_MINI_MODEL_NAME:
         return "user"
-    elif model_name == O1_MINI_MODEL_NAME:
+    elif model_name == O1_MODEL_NAME:
         return "developer"
     else:
         return "system"

@@ -12,6 +12,7 @@ import message_history
 from model_handling import (
     extract_model_name,
     get_system_name,
+    is_reasoning_model,
     lacks_streaming_support,
     uses_legacy_completions,
     GPT_4_MODEL_NAME,
@@ -25,17 +26,21 @@ DEFAULT_SYSTEM_PROMPT = """Your task is to provide high-quality thoughtful respo
 DEFAULT_FILENAME = "GPT_ATTACHED_CONTEXT.txt"
 
 
-def get_openai_org_id(short_model_name: str) -> str:
+def get_openai_api_key(short_model_name: str) -> str:
     """
-    Check if model-specific organization ID is saved as environment variable.
-    For example, if $OPENAI_ORGANIZATION_32k is saved, uses that as the org id.
-    If no such org id found, defaults back to $OPENAI_ORGANIZATION.
+    Check if model-specific API key is saved as environment variable.
+    For example, if $OPENAI_API_KEY_3 is saved, uses that as the API key when calling o3
+
+    Relevant shorthands:
+    - gpt-4-base = base,
+    - o3 = 3,
+    - o1 = 1,
     """
-    org_id_varname = f"OPENAI_ORGANIZATION_{short_model_name}"
-    org_id = os.getenv(org_id_varname)
-    if not org_id:
-        org_id = os.getenv("OPENAI_ORGANIZATION")
-    return org_id
+    api_key_varname = f"OPENAI_API_KEY_{short_model_name}"
+    api_key = os.getenv(api_key_varname)
+    if not api_key:
+        api_key = os.getenv("OPENAI_API_KEY")
+    return api_key
 
 
 if __name__ == "__main__":
@@ -174,6 +179,9 @@ if __name__ == "__main__":
     current_history.append_user_message(full_prompt)
 
     optional_args = {"temperature": temperature} if temperature is not None else dict()
+    # for some reason, this arg doesn't work for me yet
+    # if is_reasoning_model(model_name):
+    #     optional_args["reasoning_effort"] = "high"
 
     # Talk to model
 
@@ -242,8 +250,7 @@ if __name__ == "__main__":
     elif provider == "openai":
 
         client = OpenAI(
-            api_key=os.getenv("OPENAI_API_KEY"),
-            organization=get_openai_org_id(short_model_name),
+            api_key=os.getenv(get_openai_api_key(short_model_name=short_model_name)),
         )
 
         try:
