@@ -13,10 +13,13 @@ GPT_4_32K_MODEL_NAME = "gpt-4-32k"
 
 # GPT-4o
 GPT_4o_MODEL_NAME = "gpt-4o-2024-11-20"
-GPT_4o_0806_MODEL_NAME = "gpt-4o-2024-08-06"
+GPT_4o_SEARCH_MODEL_NAME = "gpt-4o-search-preview-2025-03-11"
 
 # GPT-4-base
 GPT_4_BASE_MODEL_NAME = "gpt-4-base"
+
+# GPT-4.5
+GPT_45_MODEL_NAME = "gpt-4.5-preview-2025-02-27"
 
 # o1 and o3 series
 O1_MODEL_NAME = "o1-2024-12-17"
@@ -31,7 +34,8 @@ OPENAI_MODELS = [
     GPT_4_32K_0613_MODEL_NAME,
     GPT_4_32K_MODEL_NAME,
     GPT_4o_MODEL_NAME,
-    GPT_4o_0806_MODEL_NAME,
+    GPT_4o_SEARCH_MODEL_NAME,
+    GPT_45_MODEL_NAME,
     GPT_4_BASE_MODEL_NAME,
     O1_MODEL_NAME,
     O1_MINI_MODEL_NAME,
@@ -41,8 +45,10 @@ OPENAI_MODELS = [
 # Anthropic models
 
 CLAUDE_35_SONNET_MODEL_NAME = "claude-3-5-sonnet-20241022"
+CLAUDE_37_SONNET_MODEL_NAME = "claude-3-7-sonnet-20250219"
 
 ANTHROPIC_MODELS = [
+    CLAUDE_37_SONNET_MODEL_NAME,
     CLAUDE_35_SONNET_MODEL_NAME,
 ]
 
@@ -97,10 +103,13 @@ MODEL_NAME_TO_ABBREV = {
     GPT_4_32K_0613_MODEL_NAME: ["32k-0613"],
     GPT_4_BASE_MODEL_NAME: ["base"],
     GPT_4o_MODEL_NAME: ["4o"],
-    O1_MODEL_NAME: ["o1"],
+    GPT_4o_SEARCH_MODEL_NAME: ["4os"],
+    GPT_45_MODEL_NAME: ["45", "4.5"],
+    O1_MODEL_NAME: ["o1", "1"],
     O1_MINI_MODEL_NAME: ["o1-mini", "o1m"],
     O3_MINI_MODEL_NAME: ["o3-mini", "o3", "o3m", "3"],
-    CLAUDE_35_SONNET_MODEL_NAME: ["claude3.5-sonnet", "c3.5", "c"],
+    CLAUDE_35_SONNET_MODEL_NAME: ["claude3.5-sonnet", "c3.5", "c35"],
+    CLAUDE_37_SONNET_MODEL_NAME: ["claude3.7-sonnet", "c3.7", "c"],
     GEMINI_15_PRO_MODEL_NAME: ["g1", "g15", "gemini1.5-pro"],
     GEMINI_2_MODEL_NAME: ["g", "g2"],
 }
