@@ -23,7 +23,7 @@ from model_handling import (
 
 DEFAULT_SYSTEM_PROMPT = """Your task is to provide high-quality thoughtful responses. The user has a PhD in mathematics and computer science. When the user asks you about math, give intuition and then be rigorous (using formulas/equations when needed). When the user asks you to write code, write the code in one big block. Just write the code and nothing else -- no explanation needed. When the user asks for writing advice, give multiple options, and use academic language. Finally, in all your responses, no matter what, NEVER say anything like 'As an AI', 'it's important to note', or 'it depends on the context'. Don't end with a summary or caveats."""
 
-DEFAULT_FILENAME = "GPT_ATTACHED_CONTEXT.txt"
+DEFAULT_FILENAME = "LLM_ATTACHED_CONTEXT.txt"
 
 
 def get_openai_api_key(short_model_name: str) -> str:

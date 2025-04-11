@@ -1,4 +1,4 @@
-# Simple command-line interface for OpenAI and Anthropic API
+# Simple command-line interface for LLMs
 
 ## Installation instructions 
 
@@ -21,15 +21,7 @@ Display help:
 
 `ask -h`
 
-Make a query to GPT-3.5: 
-
-`ask "What is the fifth prime number?" -m 3`
-
-Make a query to GPT-4:
-
-`ask "What is the fifth prime number?" -m 4`
-
-Make a query to Claude 3:
+Make a query to Claude 3.7 Sonnet:
 
 `ask "What is the fifth prime number?" -m c`
 
@@ -53,22 +45,22 @@ If you have additional context you would like to attach to your prompt (e.g. cod
 
 `ask -w`
 
-This will open a file `GPT_ATTACHED_CONTEXT.txt` in vim. Paste in the context you want, save and exit. 
+This will open a file `LLM_ATTACHED_CONTEXT.txt` in vim. Paste in the context you want, save and exit. 
 
 **Step 2: query model**
 
 `ask -f "How do I fix the following code?"`
 
-When the `-f` flag is enabled, the text in `GPT_ATTACHED_CONTEXT.txt` will be appended to the end of your prompt. 
+When the `-f` flag is enabled, the text in `LLM_ATTACHED_CONTEXT.txt` will be appended to the end of your prompt. 
 
 
-## Using different OpenAI organization ids for different models 
+## Using different OpenAI API keys for different LLMs
 
-By default, all queries will use the same organization id, `OPENAI_ORGANIZATION`. To override this behavior for specific models, you can add to your `.bashrc` any subset of the following lines.
+By default, all OpenAI API queries will use the same API key, `OPENAI_API_KEY`. To override this behavior for specific models, you can add to your `.bashrc` any subset of the following lines.
 
 ```
-export OPENAI_ORGANIZATION_3=<org id for gpt-3.5-turbo> # this org id will be used for all gpt-3.5-turbo calls
-export OPENAI_ORGANIZATION_4=<org id for gpt-4>         # this org id will be used for all gpt-4 calls 
-export OPENAI_ORGANIZATION_32=<org id for gpt-4-32k>    # this org id will be used for all gpt-4-32k calls
-export OPENAI_ORGANIZATION_base=<org id for gpt-4-base> # this org id will be used for all gpt-4-base calls 
+export OPENAI_API_KEY_1   =<api key for o1>           # this api key will be used for all o1 calls
+export OPENAI_API_KEY_base=<api key for gpt-4-base>   # this api key will be used for all gpt-4 calls
 ```
+
+Full list of shorthands given in `MODEL_NAME_TO_ABBREV` in `model_handling.py`. 
