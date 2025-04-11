@@ -6,15 +6,12 @@
 
 2. Install necessary dependencies:
 ```
-pip install openai
-pip install colorama
-pip install anthropic
-pip install google-generativeai
+pipenv install
 ```
 
 3. Run `./install.sh`
 
-4. Follow the instructions about `OPENAI_API_KEY` and `ANTHROPIC_API_KEY` and `GOOGLE_API_KEY`
+4. Follow the instructions setting environment variables `OPENAI_API_KEY` and `ANTHROPIC_API_KEY` and `GOOGLE_API_KEY` and `XAI_API_KEY`
 
 5. Run `ask "Hello world"`
 
