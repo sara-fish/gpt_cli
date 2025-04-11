@@ -59,6 +59,10 @@ GEMINI_2_MODEL_NAME = "gemini-2.0-flash-exp"
 
 GOOGLE_MODELS = [GEMINI_15_PRO_MODEL_NAME, GEMINI_2_MODEL_NAME]
 
+GROK_3_MODEL_NAME = "grok-3-fast-beta"
+GROK_3_MINI_MODEL_NAME = "grok-3-mini-fast-beta"
+XAI_MODELS = [GROK_3_MODEL_NAME, GROK_3_MINI_MODEL_NAME]
+
 
 def uses_legacy_completions(model_name: str) -> bool:
     if model_name == GPT_4_BASE_MODEL_NAME:
@@ -112,6 +116,8 @@ MODEL_NAME_TO_ABBREV = {
     CLAUDE_37_SONNET_MODEL_NAME: ["claude3.7-sonnet", "c3.7", "c"],
     GEMINI_15_PRO_MODEL_NAME: ["g1", "g15", "gemini1.5-pro"],
     GEMINI_2_MODEL_NAME: ["g", "g2"],
+    GROK_3_MODEL_NAME: ["x", "x3"],
+    GROK_3_MINI_MODEL_NAME: ["xm", "xm3"],
 }
 
 MODEL_NAME_TO_ABBREV_LEGEND = ", ".join(
@@ -140,5 +146,7 @@ def model_name_to_provider(model_name: str) -> Literal["anthropic", "openai", "g
         return "openai"
     elif model_name in GOOGLE_MODELS:
         return "google"
+    elif model_name in XAI_MODELS:
+        return "xai"
     else:
         raise NotImplementedError(f"unrecognized {model_name}")

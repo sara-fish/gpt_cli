@@ -47,9 +47,7 @@ if __name__ == "__main__":
     # Parse command line input
 
     # Set up parser
-    parser = argparse.ArgumentParser(
-        description="Simple command line interface for OpenAI API."
-    )
+    parser = argparse.ArgumentParser()
     parser.add_argument(
         "prompt", nargs="?", type=str, help='Your prompt (e.g. "Hello World").'
     )
@@ -247,10 +245,18 @@ if __name__ == "__main__":
         else:
             print()
 
-    elif provider == "openai":
+    elif provider == "openai" or provider == "xai":
+
+        base_url = "https://api.x.ai/v1" if provider == "xai" else None
+        api_key = (
+            os.getenv("XAI_API_KEY")
+            if provider == "xai"
+            else os.getenv(get_openai_api_key(short_model_name=short_model_name))
+        )
 
         client = OpenAI(
-            api_key=os.getenv(get_openai_api_key(short_model_name=short_model_name)),
+            api_key=api_key,
+            base_url=base_url,
         )
 
         try:
