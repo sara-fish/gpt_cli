@@ -15,13 +15,13 @@ from model_handling import (
     is_reasoning_model,
     lacks_streaming_support,
     uses_legacy_completions,
-    GPT_4_MODEL_NAME,
     MODEL_NAME_TO_ABBREV_LEGEND,
     model_name_to_provider,
+    DEFAULT_MODEL_NAME,
 )
 
 
-DEFAULT_SYSTEM_PROMPT = """Your task is to provide high-quality thoughtful responses. The user has a PhD in mathematics and computer science. When the user asks you about math, give intuition and then be rigorous (using formulas/equations when needed). When the user asks you to write code, write the code in one big block. Just write the code and nothing else -- no explanation needed. When the user asks for writing advice, give multiple options, and use academic language. Finally, in all your responses, no matter what, NEVER say anything like 'As an AI', 'it's important to note', or 'it depends on the context'. Don't end with a summary or caveats."""
+DEFAULT_SYSTEM_PROMPT = """Your task is to provide high-quality thoughtful responses. The user has a PhD in mathematics and computer science. When the user asks you about math, give intuition and then be rigorous (using formulas/equations when needed). When the user asks you to write code, write the code in one big block. Just write the code and nothing else -- no explanation needed. When the user asks for writing advice, give multiple options, and use academic language. Finally, in all your responses, no matter what, NEVER say anything like 'As an AI', 'it's important to note', or 'it depends on the context'. Don't end with a summary or caveats. Don't just be sycophantic, it's OK to criticize the user and suggest alternate approaches if you think they would be better."""
 
 DEFAULT_FILENAME = "LLM_ATTACHED_CONTEXT.txt"
 
@@ -33,8 +33,7 @@ def get_openai_api_key(short_model_name: str) -> str:
 
     Relevant shorthands:
     - gpt-4-base = base,
-    - o3 = 3,
-    - o1 = 1,
+    - o3 = o3,
     """
     api_key_varname = f"OPENAI_API_KEY_{short_model_name}"
     api_key = os.getenv(api_key_varname)
@@ -58,6 +57,12 @@ if __name__ == "__main__":
         help="Display entire usage history or (if conversation ID given) a specific conversation's history",
     )
     parser.add_argument(
+        "-p",
+        "--private",
+        action="store_true",
+        help="Use private mode (no logging to history).",
+    )
+    parser.add_argument(
         "-r",
         "--reply",
         action="store_true",
@@ -67,7 +72,7 @@ if __name__ == "__main__":
         "-m",
         "--model",
         nargs="?",
-        default=GPT_4_MODEL_NAME,
+        default=DEFAULT_MODEL_NAME,
         type=str,
         help=f"Model to use: {MODEL_NAME_TO_ABBREV_LEGEND}",
     )
@@ -314,21 +319,26 @@ if __name__ == "__main__":
             print()
 
     # Log to history
-    if reply_mode:
-        message_history.update_history(reply_index, user_prompt, response, model_name)
+    if args.private:
+        pass
     else:
-        # Add GPT's response to current_history object
-        current_history.append_response(response, model_name)
-        # Save current_history object to message history
-        message_history.append_history(current_history)
+        if reply_mode:
+            message_history.update_history(
+                reply_index, user_prompt, response, model_name
+            )
+        else:
+            # Add GPT's response to current_history object
+            current_history.append_response(response, model_name)
+            # Save current_history object to message history
+            message_history.append_history(current_history)
 
-    # Log all raw data
+        # Log all raw data
 
-    message_history.write_to_log(
-        f"time: {datetime.now().strftime('%Y-%m-%d-%H:%M:%S')}\n"
-    )
-    message_history.write_to_log(f"prompt: {user_prompt}\n")
-    message_history.write_to_log(f"model: {model_name}\n")
-    message_history.write_to_log(f"response: {response}\n\n")
-    if provider == "google":
-        message_history.write_to_log(str(completion) + "\n\n")
+        message_history.write_to_log(
+            f"time: {datetime.now().strftime('%Y-%m-%d-%H:%M:%S')}\n"
+        )
+        message_history.write_to_log(f"prompt: {user_prompt}\n")
+        message_history.write_to_log(f"model: {model_name}\n")
+        message_history.write_to_log(f"response: {response}\n\n")
+        if provider == "google":
+            message_history.write_to_log(str(completion) + "\n\n")
