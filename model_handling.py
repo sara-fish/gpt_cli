@@ -1,41 +1,26 @@
-# GPT-4 models
 from typing import Literal
 
 
-GPT_4_0613_MODEL_NAME = "gpt-4-0613"
-
-# GPT-4o
-GPT_4o_MODEL_NAME = "gpt-4o-2024-11-20"
-GPT_4o_SEARCH_MODEL_NAME = "gpt-4o-search-preview-2025-03-11"
-
-# GPT-4-base
-GPT_4_BASE_MODEL_NAME = "gpt-4-base"
-
-# GPT-4.5
+# OpenAI
+GPT_41_MODEL_NAME = "gpt-4.1-2025-04-14"
 GPT_45_MODEL_NAME = "gpt-4.5-preview-2025-02-27"
-
-# o1 and o3 series
-O3_MINI_MODEL_NAME = "o3-mini-2025-01-31"
 O4_MINI_MODEL_NAME = "o4-mini-2025-04-16"
 O3_MODEL_NAME = "o3-2025-04-16"
 
 OPENAI_MODELS = [
-    GPT_4_0613_MODEL_NAME,
-    GPT_4o_MODEL_NAME,
-    GPT_4o_SEARCH_MODEL_NAME,
+    GPT_41_MODEL_NAME,
     GPT_45_MODEL_NAME,
-    GPT_4_BASE_MODEL_NAME,
-    O3_MINI_MODEL_NAME,
-    O4_MINI_MODEL_NAME,
     O3_MODEL_NAME,
+    O4_MINI_MODEL_NAME,
 ]
 
 # Anthropic models
-
-CLAUDE_37_SONNET_MODEL_NAME = "claude-3-7-sonnet-20250219"
+CLAUDE_4_OPUS_MODEL_NAME = "claude-opus-4-20250514"
+CLAUDE_4_SONNET_MODEL_NAME = "claude-sonnet-4-20250514"
 
 ANTHROPIC_MODELS = [
-    CLAUDE_37_SONNET_MODEL_NAME,
+    CLAUDE_4_OPUS_MODEL_NAME,
+    CLAUDE_4_SONNET_MODEL_NAME,
 ]
 
 # Google models
@@ -48,14 +33,7 @@ GROK_3_MODEL_NAME = "grok-3-fast-beta"
 GROK_3_MINI_MODEL_NAME = "grok-3-mini-fast-beta"
 XAI_MODELS = [GROK_3_MODEL_NAME, GROK_3_MINI_MODEL_NAME]
 
-DEFAULT_MODEL_NAME = CLAUDE_37_SONNET_MODEL_NAME
-
-
-def uses_legacy_completions(model_name: str) -> bool:
-    if model_name == GPT_4_BASE_MODEL_NAME:
-        return True
-    else:
-        return False
+DEFAULT_MODEL_NAME = CLAUDE_4_OPUS_MODEL_NAME
 
 
 def lacks_streaming_support(model_name: str) -> bool:
@@ -66,30 +44,19 @@ def lacks_streaming_support(model_name: str) -> bool:
 
 
 def is_reasoning_model(model_name: str) -> bool:
-    if (
-        model_name == O3_MINI_MODEL_NAME
-        or model_name == O4_MINI_MODEL_NAME
-        or model_name == O3_MODEL_NAME
-    ):
+    if model_name == O4_MINI_MODEL_NAME or model_name == O3_MODEL_NAME:
         return True
     else:
         return False
 
 
-def get_system_name(model_name: str) -> str:
-    return "system"
-
-
 MODEL_NAME_TO_ABBREV = {
-    GPT_4_0613_MODEL_NAME: ["4"],
-    GPT_4_BASE_MODEL_NAME: ["base"],
-    GPT_4o_MODEL_NAME: ["4o"],
-    GPT_4o_SEARCH_MODEL_NAME: ["4os"],
+    GPT_41_MODEL_NAME: ["41", "4.1"],
     GPT_45_MODEL_NAME: ["45", "4.5"],
-    O3_MINI_MODEL_NAME: ["o3-mini", "o3m"],
+    O4_MINI_MODEL_NAME: ["o4-mini", "o4m", "o4"],
     O3_MODEL_NAME: ["o3"],
-    O4_MINI_MODEL_NAME: ["o4-mini", "o4m"],
-    CLAUDE_37_SONNET_MODEL_NAME: ["c"],
+    CLAUDE_4_OPUS_MODEL_NAME: ["c"],
+    CLAUDE_4_SONNET_MODEL_NAME: ["cs"],
     GEMINI_2_5_MODEL_NAME: ["g"],
     GROK_3_MODEL_NAME: ["x", "x3"],
     GROK_3_MINI_MODEL_NAME: ["xm", "xm3"],

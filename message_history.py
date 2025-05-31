@@ -19,55 +19,26 @@ colorama.init(autoreset=True)
 
 
 class History:
-    def __init__(self, chat_name, system_prompt, legacy):
+    def __init__(self, chat_name, system_prompt):
         self.chat_name = chat_name
-        self.legacy = legacy
-        if self.legacy:
-            self.message_history = []
-        else:
-            self.message_history = [{"role": "system", "content": system_prompt}]
-
-    def is_legacy(self):
-        try:
-            return self.legacy
-        except AttributeError:
-            # Older part of message history, prior to introduction of this feature.
-            self.legacy = False
-            return self.legacy
+        self.message_history = [{"role": "system", "content": system_prompt}]
 
     def get_message_history(
         self,
-        platform: Literal["legacy", "openai", "anthropic", "google", None] = None,
-        system_name: str = "system",
+        platform: Literal["openai", "anthropic", "google", "xai", None] = None,
     ):
         """
-        If legacy: return message history as string
-        If openai: return message history as list of dicts
+        If openai/xai: return message history as list of dicts
         If anthropic: return tuple of (system prompt, message history as list of dicts w/o system prompt)
         If google: return tuple of (system prompt, message history), where 'assistant' is replaced with 'model' in role name
         Else: return full message history object (which has some other stuff attached)
         """
-        if platform == "legacy":
-            # Must convert to string
-            prompt = ""
-            for line in self.message_history:
-                prompt += line["content"]
-            return prompt
-        elif platform == "openai":
+        if platform == "openai":
             return [
                 {"role": line["role"], "content": line["content"]}
                 for line in self.message_history
             ]
-        elif platform == "openai_o1":
-            # for some godforsaken reason, they renamed system differently for o1 and o1-mini
-            output = []
-            for line in self.message_history:
-                if line["role"] == "system":
-                    output.append({"role": system_name, "content": line["content"]})
-                else:
-                    output.append({"role": line["role"], "content": line["content"]})
-            return output
-        elif platform == "anthropic" or platform == "google":
+        elif platform == "anthropic":
             if self.message_history[0]["role"] == "system":
                 system_prompt = self.message_history[0]["content"]
                 other_messages = [
@@ -78,6 +49,24 @@ class History:
                 system_prompt = None
                 other_messages = [
                     {"role": line["role"], "content": line["content"]}
+                    for line in self.message_history
+                ]
+            # assert there is no system prompt in the other messages (this shouldn't happen)
+            for line in other_messages:
+                assert line["role"] != "system"
+            # return messages and system prompt
+            return system_prompt, other_messages
+        elif platform == "google":
+            if self.message_history[0]["role"] == "system":
+                system_prompt = self.message_history[0]["content"]
+                other_messages = [
+                    {"role": line["role"], "parts": [{"text": line["content"]}]}
+                    for line in self.message_history[1:]
+                ]
+            else:
+                system_prompt = None
+                other_messages = [
+                    {"role": line["role"], "parts": [{"text": line["content"]}]}
                     for line in self.message_history
                 ]
             # assert there is no system prompt in the other messages (this shouldn't happen)
@@ -112,22 +101,15 @@ class History:
         return max(map(len, models_in_conversation)) + 1
 
     def display(self):
-        if not self.is_legacy():
-            pad_len = self._compute_pad_len()
-            for line in self.message_history:
-                color = _get_line_color(line["role"])
-                role_name = (
-                    line["role"] if line["role"] != "assistant" else line["model_name"]
-                )
-                role = (role_name + ":").ljust(pad_len)
-                content = line["content"]
-                print(f"{color}{role} {content}")
-        else:
-            for line in self.message_history:
-                color = _get_line_color(line["role"])
-                content = line["content"]
-                print(f"{color}{content}", end="")
-            print()
+        pad_len = self._compute_pad_len()
+        for line in self.message_history:
+            color = _get_line_color(line["role"])
+            role_name = (
+                line["role"] if line["role"] != "assistant" else line["model_name"]
+            )
+            role = (role_name + ":").ljust(pad_len)
+            content = line["content"]
+            print(f"{color}{role} {content}")
 
 
 def _get_line_color(role):
@@ -217,7 +199,7 @@ def _display_history_line(chat_name, history):
     line_length = get_terminal_size().columns
     start_length = line_length // 2 - 2 - len(chat_name)
     end_length = line_length // 2 - 2 - len(chat_name)
-    start_idx = 0 if history.is_legacy() else 1
+    start_idx = 1
     start_message = f"{USER_COLOR}{history.get_message_history()[start_idx]['content'][:start_length]}".replace(
         "\n", ""
     ).replace(

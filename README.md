@@ -21,7 +21,7 @@ Display help:
 
 `ask -h`
 
-Make a query to Claude 3.7 Sonnet:
+Make a query to Claude 4 Opus:
 
 `ask "What is the fifth prime number?" -m c`
 
@@ -53,14 +53,3 @@ This will open a file `LLM_ATTACHED_CONTEXT.txt` in vim. Paste in the context yo
 
 When the `-f` flag is enabled, the text in `LLM_ATTACHED_CONTEXT.txt` will be appended to the end of your prompt. 
 
-
-## Using different OpenAI API keys for different LLMs
-
-By default, all OpenAI API queries will use the same API key, `OPENAI_API_KEY`. To override this behavior for specific models, you can add to your `.bashrc` any subset of the following lines.
-
-```
-export OPENAI_API_KEY_1   =<api key for o1>           # this api key will be used for all o1 calls
-export OPENAI_API_KEY_base=<api key for gpt-4-base>   # this api key will be used for all gpt-4 calls
-```
-
-Full list of shorthands given in `MODEL_NAME_TO_ABBREV` in `model_handling.py`. 

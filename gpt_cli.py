@@ -2,8 +2,9 @@
 
 import os
 from openai import OpenAI
-import google.generativeai as genai
 import anthropic
+from google import genai
+from google.genai import types
 import argparse
 from datetime import datetime
 import subprocess
@@ -11,10 +12,7 @@ import subprocess
 import message_history
 from model_handling import (
     extract_model_name,
-    get_system_name,
-    is_reasoning_model,
     lacks_streaming_support,
-    uses_legacy_completions,
     MODEL_NAME_TO_ABBREV_LEGEND,
     model_name_to_provider,
     DEFAULT_MODEL_NAME,
@@ -24,22 +22,6 @@ from model_handling import (
 DEFAULT_SYSTEM_PROMPT = """Your task is to provide high-quality thoughtful responses. The user has a PhD in mathematics and computer science. When the user asks you about math, give intuition and then be rigorous (using formulas/equations when needed). When the user asks you to write code, write the code in one big block. Just write the code and nothing else -- no explanation needed. When the user asks for writing advice, give multiple options, and use academic language. Finally, in all your responses, no matter what, NEVER say anything like 'As an AI', 'it's important to note', or 'it depends on the context'. Don't end with a summary or caveats. Don't just be sycophantic, it's OK to criticize the user and suggest alternate approaches if you think they would be better."""
 
 DEFAULT_FILENAME = "LLM_ATTACHED_CONTEXT.txt"
-
-
-def get_openai_api_key(short_model_name: str) -> str:
-    """
-    Check if model-specific API key is saved as environment variable.
-    For example, if $OPENAI_API_KEY_3 is saved, uses that as the API key when calling o3
-
-    Relevant shorthands:
-    - gpt-4-base = base,
-    - o3 = o3,
-    """
-    api_key_varname = f"OPENAI_API_KEY_{short_model_name}"
-    api_key = os.getenv(api_key_varname)
-    if not api_key:
-        api_key = os.getenv("OPENAI_API_KEY")
-    return api_key
 
 
 if __name__ == "__main__":
@@ -162,9 +144,7 @@ if __name__ == "__main__":
             print("Can't reply to empty history.")
     else:
         current_chat_name = str(len(chat_names))
-        current_history = message_history.History(
-            current_chat_name, system_prompt, uses_legacy_completions(model_name)
-        )
+        current_history = message_history.History(current_chat_name, system_prompt)
 
     if fileread:
         try:
@@ -223,20 +203,11 @@ if __name__ == "__main__":
                 platform="google"
             )
 
-            genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
-            client = genai.GenerativeModel(
-                model_name=model_name, system_instruction=system_prompt
-            )
+            client = genai.Client(api_key=os.getenv("GOOGLE_API_KEY"))
 
-            messages_for_google = [
-                {"role": message["role"], "parts": message["content"]}
-                for message in messages
-            ]
-
-            completion = client.generate_content(
-                contents=messages_for_google,
-                generation_config=optional_args,
-                stream=True,
+            completion = client.models.generate_content_stream(
+                model=model_name,
+                contents=messages,
             )
 
             response = ""
@@ -256,7 +227,7 @@ if __name__ == "__main__":
         api_key = (
             os.getenv("XAI_API_KEY")
             if provider == "xai"
-            else os.getenv(get_openai_api_key(short_model_name=short_model_name))
+            else os.getenv("OPENAI_API_KEY_CLI")
         )
 
         client = OpenAI(
@@ -266,28 +237,11 @@ if __name__ == "__main__":
 
         try:
 
-            if uses_legacy_completions(model_name):
-                prompt = current_history.get_message_history(platform="legacy")
-                completion = client.completions.create(
-                    model=model_name,
-                    prompt=prompt,
-                    stream=True,
-                    max_tokens=4000,
-                    **optional_args,
-                )
-                response = ""
-                for chunk in completion:
-                    chunk_message_str = chunk.choices[0].text
-                    response += chunk_message_str
-                    print(chunk_message_str, end="", flush=True)
-
-            elif lacks_streaming_support(model_name):
+            if lacks_streaming_support(model_name):
 
                 completion = client.chat.completions.create(
                     model=model_name,
-                    messages=current_history.get_message_history(
-                        platform="openai_o1", system_name=get_system_name(model_name)
-                    ),
+                    messages=current_history.get_message_history(platform="openai_o1"),
                     **optional_args,
                 )
 
