@@ -3,13 +3,11 @@ from typing import Literal
 
 # OpenAI
 GPT_41_MODEL_NAME = "gpt-4.1-2025-04-14"
-GPT_45_MODEL_NAME = "gpt-4.5-preview-2025-02-27"
 O4_MINI_MODEL_NAME = "o4-mini-2025-04-16"
 O3_MODEL_NAME = "o3-2025-04-16"
 
 OPENAI_MODELS = [
     GPT_41_MODEL_NAME,
-    GPT_45_MODEL_NAME,
     O3_MODEL_NAME,
     O4_MINI_MODEL_NAME,
 ]
@@ -25,13 +23,14 @@ ANTHROPIC_MODELS = [
 
 # Google models
 
-GEMINI_2_5_MODEL_NAME = "gemini-2.5-pro-preview-05-06"
+GEMINI_2_5_MODEL_NAME = "gemini-2.5-pro-preview-06-05"
 
 GOOGLE_MODELS = [GEMINI_2_5_MODEL_NAME]
 
 GROK_3_MODEL_NAME = "grok-3-fast-beta"
 GROK_3_MINI_MODEL_NAME = "grok-3-mini-fast-beta"
-XAI_MODELS = [GROK_3_MODEL_NAME, GROK_3_MINI_MODEL_NAME]
+GROK_4_MODEL_NAME = "grok-4-0709"
+XAI_MODELS = [GROK_3_MODEL_NAME, GROK_3_MINI_MODEL_NAME, GROK_4_MODEL_NAME]
 
 DEFAULT_MODEL_NAME = CLAUDE_4_OPUS_MODEL_NAME
 
@@ -52,14 +51,14 @@ def is_reasoning_model(model_name: str) -> bool:
 
 MODEL_NAME_TO_ABBREV = {
     GPT_41_MODEL_NAME: ["41", "4.1"],
-    GPT_45_MODEL_NAME: ["45", "4.5"],
     O4_MINI_MODEL_NAME: ["o4-mini", "o4m", "o4"],
     O3_MODEL_NAME: ["o3"],
     CLAUDE_4_OPUS_MODEL_NAME: ["c"],
     CLAUDE_4_SONNET_MODEL_NAME: ["cs"],
     GEMINI_2_5_MODEL_NAME: ["g"],
-    GROK_3_MODEL_NAME: ["x", "x3"],
+    GROK_3_MODEL_NAME: ["x3"],
     GROK_3_MINI_MODEL_NAME: ["xm", "xm3"],
+    GROK_4_MODEL_NAME: ["x", "grok"],
 }
 
 MODEL_NAME_TO_ABBREV_LEGEND = ", ".join(
@@ -81,7 +80,9 @@ def extract_model_name(model_short_str):
         raise NotImplementedError(f"Can't recognize model name {model_short_str}")
 
 
-def model_name_to_provider(model_name: str) -> Literal["anthropic", "openai", "google"]:
+def model_name_to_provider(
+    model_name: str,
+) -> Literal["anthropic", "openai", "google", "xai"]:
     if model_name in ANTHROPIC_MODELS:
         return "anthropic"
     elif model_name in OPENAI_MODELS:
