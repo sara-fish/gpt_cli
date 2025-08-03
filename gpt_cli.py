@@ -8,6 +8,9 @@ from google.genai import types
 import argparse
 from datetime import datetime
 import subprocess
+from rich.console import Console
+from rich.markdown import Markdown
+from rich.live import Live
 
 import message_history
 from model_handling import (
@@ -17,7 +20,6 @@ from model_handling import (
     model_name_to_provider,
     DEFAULT_MODEL_NAME,
 )
-
 
 DEFAULT_SYSTEM_PROMPT = """Your task is to provide high-quality thoughtful responses. The user has a PhD in mathematics and computer science. When the user asks you about math, give intuition and then be rigorous (using formulas/equations when needed). When the user asks you to write code, write the code in one big block. Just write the code and nothing else -- no explanation needed. When the user asks for writing advice, give multiple options, and use academic language. Finally, in all your responses, no matter what, NEVER say anything like 'As an AI', 'it's important to note', or 'it depends on the context'. Don't end with a summary or caveats. Don't just be sycophantic, it's OK to criticize the user and suggest alternate approaches if you think they would be better."""
 
@@ -170,6 +172,8 @@ if __name__ == "__main__":
 
     provider = model_name_to_provider(model_name)
 
+    console = Console()  # for printing markdown
+
     if provider == "anthropic":
         try:
             client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
@@ -184,13 +188,15 @@ if __name__ == "__main__":
                 messages_dict = {"system": system_prompt, "messages": messages}
 
             response = ""
+            buffer = ""
 
             with client.messages.stream(
                 model=model_name, max_tokens=4000, **messages_dict, **optional_args
             ) as stream:
-                for text in stream.text_stream:
-                    response += text
-                    print(text, end="", flush=True)
+                with Live(console=console, refresh_per_second=10) as live:
+                    for text in stream.text_stream:
+                        response += text
+                        live.update(Markdown(response))
         except KeyboardInterrupt:
             print("<KeyboardInterrupt>", flush=True)
         else:
@@ -212,9 +218,10 @@ if __name__ == "__main__":
 
             response = ""
 
-            for chunk in completion:
-                response += chunk.text
-                print(chunk.text, end="", flush=True)
+            with Live(console=console, refresh_per_second=10) as live:
+                for chunk in completion:
+                    response += chunk.text
+                    live.update(Markdown(response))
 
         except KeyboardInterrupt:
             print("<KeyboardInterrupt>", flush=True)
@@ -257,15 +264,16 @@ if __name__ == "__main__":
                 )
 
                 response = ""
-                for chunk in completion:
-                    chunk_message = chunk.choices[0].delta
-                    chunk_message_str = (
-                        chunk_message.content
-                        if chunk_message.content is not None
-                        else ""
-                    )
-                    response += chunk_message_str
-                    print(chunk_message_str, end="", flush=True)
+                with Live(console=console, refresh_per_second=10) as live:
+                    for chunk in completion:
+                        chunk_message = chunk.choices[0].delta
+                        chunk_message_str = (
+                            chunk_message.content
+                            if chunk_message.content is not None
+                            else ""
+                        )
+                        response += chunk_message_str
+                        live.update(Markdown(response))
 
         except KeyboardInterrupt:
             print("<KeyboardInterrupt>", flush=True)

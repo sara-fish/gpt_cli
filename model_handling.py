@@ -36,10 +36,7 @@ DEFAULT_MODEL_NAME = CLAUDE_4_OPUS_MODEL_NAME
 
 
 def lacks_streaming_support(model_name: str) -> bool:
-    if model_name == O3_MODEL_NAME:
-        return True
-    else:
-        return False
+    return False
 
 
 def is_reasoning_model(model_name: str) -> bool:

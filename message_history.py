@@ -3,6 +3,8 @@ from pathlib import Path
 from typing import Literal
 import colorama
 from shutil import get_terminal_size
+from rich.markdown import Markdown
+from rich.console import Console
 
 # This provides functionality for saving and displaying message history.
 
@@ -101,6 +103,7 @@ class History:
         return max(map(len, models_in_conversation)) + 1
 
     def display(self):
+        console = Console()
         pad_len = self._compute_pad_len()
         for line in self.message_history:
             color = _get_line_color(line["role"])
@@ -108,8 +111,9 @@ class History:
                 line["role"] if line["role"] != "assistant" else line["model_name"]
             )
             role = (role_name + ":").ljust(pad_len)
-            content = line["content"]
-            print(f"{color}{role} {content}")
+            content = Markdown(line["content"])
+            print(f"{color}{role}", flush=True)
+            console.print(content)
 
 
 def _get_line_color(role):
