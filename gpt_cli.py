@@ -14,11 +14,13 @@ from rich.live import Live
 
 import message_history
 from model_handling import (
+    MODEL_NAME_TO_ABBREV,
     extract_model_name,
     lacks_streaming_support,
     MODEL_NAME_TO_ABBREV_LEGEND,
     model_name_to_provider,
     DEFAULT_MODEL_NAME,
+    uses_legacy_completions,
 )
 
 DEFAULT_SYSTEM_PROMPT = """Your task is to provide high-quality thoughtful responses. The user has a PhD in mathematics and computer science. When the user asks you about math, give intuition and then be rigorous (using formulas/equations when needed). When the user asks you to write code, write the code in one big block. Just write the code and nothing else -- no explanation needed. When the user asks for writing advice, give multiple options, and use academic language. Finally, in all your responses, no matter what, NEVER say anything like 'As an AI', 'it's important to note', or 'it depends on the context'. Don't end with a summary or caveats. Don't just be sycophantic, it's OK to criticize the user and suggest alternate approaches if you think they would be better."""
@@ -146,7 +148,11 @@ if __name__ == "__main__":
             print("Can't reply to empty history.")
     else:
         current_chat_name = str(len(chat_names))
-        current_history = message_history.History(current_chat_name, system_prompt)
+        current_history = message_history.History(
+            current_chat_name,
+            system_prompt,
+            legacy=uses_legacy_completions(model_name),
+        )
 
     if fileread:
         try:
@@ -220,7 +226,8 @@ if __name__ == "__main__":
 
             with Live(console=console, refresh_per_second=10) as live:
                 for chunk in completion:
-                    response += chunk.text
+                    if chunk.text:
+                        response += chunk.text
                     live.update(Markdown(response))
 
         except KeyboardInterrupt:
@@ -231,11 +238,18 @@ if __name__ == "__main__":
     elif provider == "openai" or provider == "xai":
 
         base_url = "https://api.x.ai/v1" if provider == "xai" else None
-        api_key = (
-            os.getenv("XAI_API_KEY")
-            if provider == "xai"
-            else os.getenv("OPENAI_API_KEY_CLI")
-        )
+        if provider == "xai":
+            api_key = os.getenv("XAI_API_KEY")
+        else:
+            # first detect if there's a model-specific API key
+            model_abbrevs = MODEL_NAME_TO_ABBREV.get(model_name, [])
+            for model_abbrev in model_abbrevs:
+                env_var = f"OPENAI_API_KEY_{model_abbrev}"
+                if os.getenv(env_var):
+                    api_key = os.getenv(env_var)
+                    break
+            else:
+                api_key = os.getenv("OPENAI_API_KEY_CLI")
 
         client = OpenAI(
             api_key=api_key,
@@ -244,13 +258,31 @@ if __name__ == "__main__":
 
         try:
 
-            if lacks_streaming_support(model_name):
+            if uses_legacy_completions(model_name):
+
+                prompt = current_history.get_message_history(platform="legacy")
+
+                completion = client.completions.create(
+                    model=model_name,
+                    prompt=prompt,
+                    stream=True,
+                    max_tokens=4000,
+                    **optional_args,
+                )  # type: ignore
+
+                response = ""
+                for chunk in completion:
+                    chunk_message_str = chunk.choices[0].text
+                    response += chunk_message_str
+                    print(chunk_message_str, end="", flush=True)
+
+            elif lacks_streaming_support(model_name):
 
                 completion = client.chat.completions.create(
                     model=model_name,
-                    messages=current_history.get_message_history(platform="openai_o1"),
+                    messages=current_history.get_message_history(platform="openai"),
                     **optional_args,
-                )
+                )  # type: ignore
 
                 response = completion.choices[0].message.content
                 print(response)
@@ -261,7 +293,7 @@ if __name__ == "__main__":
                     messages=current_history.get_message_history(platform="openai"),
                     stream=True,
                     **optional_args,
-                )
+                )  # type: ignore
 
                 response = ""
                 with Live(console=console, refresh_per_second=10) as live:

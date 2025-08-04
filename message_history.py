@@ -21,21 +21,40 @@ colorama.init(autoreset=True)
 
 
 class History:
-    def __init__(self, chat_name, system_prompt):
+    def __init__(self, chat_name, system_prompt, legacy: bool):
         self.chat_name = chat_name
-        self.message_history = [{"role": "system", "content": system_prompt}]
+        self.legacy = legacy
+        if self.legacy:
+            self.message_history = []
+        else:
+            self.message_history = [{"role": "system", "content": system_prompt}]
+
+    def is_legacy(self):
+        try:
+            return self.legacy
+
+        except AttributeError:
+            return False
 
     def get_message_history(
         self,
-        platform: Literal["openai", "anthropic", "google", "xai", None] = None,
+        platform: Literal[
+            "legacy", "openai", "anthropic", "google", "xai", None
+        ] = None,
     ):
         """
+        If legacy: return message history as str
         If openai/xai: return message history as list of dicts
         If anthropic: return tuple of (system prompt, message history as list of dicts w/o system prompt)
         If google: return tuple of (system prompt, message history), where 'assistant' is replaced with 'model' in role name
         Else: return full message history object (which has some other stuff attached)
         """
-        if platform == "openai":
+        if platform == "legacy":
+            prompt = ""
+            for line in self.message_history:
+                prompt += line["content"]
+            return prompt
+        elif platform == "openai":
             return [
                 {"role": line["role"], "content": line["content"]}
                 for line in self.message_history
@@ -103,17 +122,24 @@ class History:
         return max(map(len, models_in_conversation)) + 1
 
     def display(self):
-        console = Console()
-        pad_len = self._compute_pad_len()
-        for line in self.message_history:
-            color = _get_line_color(line["role"])
-            role_name = (
-                line["role"] if line["role"] != "assistant" else line["model_name"]
-            )
-            role = (role_name + ":").ljust(pad_len)
-            content = Markdown(line["content"])
-            print(f"{color}{role}", flush=True)
-            console.print(content)
+        if not self.is_legacy():
+            console = Console()
+            pad_len = self._compute_pad_len()
+            for line in self.message_history:
+                color = _get_line_color(line["role"])
+                role_name = (
+                    line["role"] if line["role"] != "assistant" else line["model_name"]
+                )
+                role = (role_name + ":").ljust(pad_len)
+                content = Markdown(line["content"])
+                print(f"{color}{role}", flush=True)
+                console.print(content)
+        else:
+            for line in self.message_history:
+                color = _get_line_color(line["role"])
+                content = line["content"]
+                print(f"{color}{content}", end="", flush=True)
+            print()
 
 
 def _get_line_color(role):
@@ -203,7 +229,7 @@ def _display_history_line(chat_name, history):
     line_length = get_terminal_size().columns
     start_length = line_length // 2 - 2 - len(chat_name)
     end_length = line_length // 2 - 2 - len(chat_name)
-    start_idx = 1
+    start_idx = 0 if history.is_legacy() else 1
     start_message = f"{USER_COLOR}{history.get_message_history()[start_idx]['content'][:start_length]}".replace(
         "\n", ""
     ).replace(

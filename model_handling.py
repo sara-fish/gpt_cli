@@ -5,11 +5,13 @@ from typing import Literal
 GPT_41_MODEL_NAME = "gpt-4.1-2025-04-14"
 O4_MINI_MODEL_NAME = "o4-mini-2025-04-16"
 O3_MODEL_NAME = "o3-2025-04-16"
+GPT_4_BASE = "gpt-4-base"
 
 OPENAI_MODELS = [
     GPT_41_MODEL_NAME,
     O3_MODEL_NAME,
     O4_MINI_MODEL_NAME,
+    GPT_4_BASE,
 ]
 
 # Anthropic models
@@ -36,6 +38,9 @@ DEFAULT_MODEL_NAME = CLAUDE_4_OPUS_MODEL_NAME
 
 
 def lacks_streaming_support(model_name: str) -> bool:
+    assert not uses_legacy_completions(
+        model_name
+    ), f"Shouldn't be checking this for legacy model {model_name} -- shouldn't be using chat completions API"
     return False
 
 
@@ -50,6 +55,7 @@ MODEL_NAME_TO_ABBREV = {
     GPT_41_MODEL_NAME: ["41", "4.1"],
     O4_MINI_MODEL_NAME: ["o4-mini", "o4m", "o4"],
     O3_MODEL_NAME: ["o3"],
+    GPT_4_BASE: ["base"],
     CLAUDE_4_OPUS_MODEL_NAME: ["c"],
     CLAUDE_4_SONNET_MODEL_NAME: ["cs"],
     GEMINI_2_5_MODEL_NAME: ["g"],
@@ -90,3 +96,7 @@ def model_name_to_provider(
         return "xai"
     else:
         raise NotImplementedError(f"unrecognized {model_name}")
+
+
+def uses_legacy_completions(model_name: str) -> bool:
+    return model_name in [GPT_4_BASE]
