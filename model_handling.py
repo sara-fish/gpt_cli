@@ -6,12 +6,14 @@ GPT_41_MODEL_NAME = "gpt-4.1-2025-04-14"
 O4_MINI_MODEL_NAME = "o4-mini-2025-04-16"
 O3_MODEL_NAME = "o3-2025-04-16"
 GPT_4_BASE = "gpt-4-base"
+GPT_5_MODEL_NAME = "gpt-5-2025-08-07"
 
 OPENAI_MODELS = [
     GPT_41_MODEL_NAME,
     O3_MODEL_NAME,
     O4_MINI_MODEL_NAME,
     GPT_4_BASE,
+    GPT_5_MODEL_NAME,
 ]
 
 # Anthropic models
@@ -56,6 +58,7 @@ MODEL_NAME_TO_ABBREV = {
     O4_MINI_MODEL_NAME: ["o4-mini", "o4m", "o4"],
     O3_MODEL_NAME: ["o3"],
     GPT_4_BASE: ["base"],
+    GPT_5_MODEL_NAME: ["5", "gpt-5"],
     CLAUDE_4_OPUS_MODEL_NAME: ["c"],
     CLAUDE_4_SONNET_MODEL_NAME: ["cs"],
     GEMINI_2_5_MODEL_NAME: ["g"],
