@@ -2,3 +2,6 @@ __pycache__/
 .vscode/
 *.ipynb 
 .venv/
+.claude/
+CLAUDE.md
+.ruff_cache/
