@@ -2,3 +2,5 @@ __pycache__/
 .vscode/
 *.ipynb 
 .venv/
+.claude/
+CLAUDE.md

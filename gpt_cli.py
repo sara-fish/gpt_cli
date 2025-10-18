@@ -4,7 +4,6 @@ import os
 from openai import OpenAI
 import anthropic
 from google import genai
-from google.genai import types
 import argparse
 from datetime import datetime
 import subprocess
@@ -21,9 +20,22 @@ from model_handling import (
     model_name_to_provider,
     DEFAULT_MODEL_NAME,
     uses_legacy_completions,
+    supports_reasoning_effort,
+    supports_verbosity,
 )
 
-DEFAULT_SYSTEM_PROMPT = """Your task is to provide high-quality thoughtful responses. The user has a PhD in mathematics and computer science. When the user asks you about math, give intuition and then be rigorous (using formulas/equations when needed). When the user asks you to write code, write the code in one big block. Just write the code and nothing else -- no explanation needed. When the user asks for writing advice, give multiple options, and use academic language. Finally, in all your responses, no matter what, NEVER say anything like 'As an AI', 'it's important to note', or 'it depends on the context'. Don't end with a summary or caveats. Don't just be sycophantic, it's OK to criticize the user and suggest alternate approaches if you think they would be better."""
+CLAUDE_PROMPT_EXCERPT = """
+You should give concise responses to very simple questions, but provide thorough responses to complex and open-ended questions. You should discuss virtually any topic factually and objectively. You should explain difficult concepts or ideas clearly. You should also illustrate your explanations with examples, thought experiments, or metaphors. If the user corrects you or tells you that you've made a mistake, you should first think through the issue carefully before acknowledging the user, since users sometimes make errors themselves. You should never start your response by saying a question or idea or observation was good, great, fascinating, profound, excellent, or any other positive adjective. You should skip the flattery and respond directly. You should critically evaluate any theories, claims, and ideas presented to you rather than automatically agreeing or praising them. When presented with dubious, incorrect, ambiguous, or unverifiable theories, claims, or ideas, you should respectfully point out flaws, factual errors, lack of evidence, or lack of clarity rather than validating them. You should prioritize truthfulness and accuracy over agreeability, and should not tell people that incorrect theories are true just to be polite. When engaging with metaphorical, allegorical, or symbolic interpretations (such as those found in continental philosophy, religious texts, literature, or psychoanalytic theory), you should acknowledge their non-literal nature while still being able to discuss them critically.
+""".strip()
+
+USER_INFO = """
+- You can assume the user has PhD-level knowledge in mathematics, computer science, and economics.
+- When the user asks you about math, give intuition and then be rigorous (using formulas/equations when needed).
+- When the user asks you to write code, write the code in one big block. Just write the code and nothing else -- no explanation needed (unless requested otherwise).
+- When the user asks for writing advice, give multiple options, and use academic language (unless requested otherwise). Unless specified otherwise you can assume the reader is asking for help with writing an academic paper for a CS conference or econ journal.
+""".strip()
+
+DEFAULT_SYSTEM_PROMPT = CLAUDE_PROMPT_EXCERPT + USER_INFO
 
 DEFAULT_FILENAME = "LLM_ATTACHED_CONTEXT.txt"
 
@@ -93,6 +105,32 @@ if __name__ == "__main__":
         "-t", "--temperature", help="Set the temperature for the query.", type=float
     )
 
+    parser.add_argument(
+        "-re",
+        "--reasoning",
+        nargs="?",
+        default="high",
+        type=str,
+        choices=["minimal", "low", "medium", "high"],
+        help='Reasoning effort level: "minimal", "low", "medium", "high" (default: high)',
+    )
+
+    parser.add_argument(
+        "-v",
+        "--verbosity",
+        nargs="?",
+        default="low",
+        type=str,
+        choices=["low", "medium", "high"],
+        help='Verbosity level: "low", "medium", "high" (default: low)',
+    )
+
+    parser.add_argument(
+        "--disable-markdown",
+        action="store_true",
+        help="Disable markdown rendering and print raw output",
+    )
+
     # Parse and extract args
     args = parser.parse_args()
 
@@ -106,6 +144,9 @@ if __name__ == "__main__":
     fileread = args.fileread
     filewrite = args.filewrite
     temperature = args.temperature
+    reasoning_effort = args.reasoning
+    verbosity = args.verbosity
+    disable_markdown = args.disable_markdown
 
     # First handle display mode
     if display_mode:
@@ -169,10 +210,18 @@ if __name__ == "__main__":
 
     current_history.append_user_message(full_prompt)
 
-    optional_args = {"temperature": temperature} if temperature is not None else dict()
-    # for some reason, this arg doesn't work for me yet
-    # if is_reasoning_model(model_name):
-    #     optional_args["reasoning_effort"] = "high"
+    # Build optional arguments for API calls
+    optional_args = {}
+    if temperature is not None:
+        optional_args["temperature"] = temperature
+
+    # Add reasoning_effort for supported models (o3, o4-mini, GPT-5)
+    if supports_reasoning_effort(model_name) and reasoning_effort is not None:
+        optional_args["reasoning_effort"] = reasoning_effort
+
+    # Add verbosity for supported models (GPT-5)
+    if supports_verbosity(model_name) and verbosity is not None:
+        optional_args["verbosity"] = verbosity
 
     # Talk to model
 
@@ -195,22 +244,37 @@ if __name__ == "__main__":
 
             response = ""
             buffer = ""
+            usage = None
 
             with client.messages.stream(
                 model=model_name, max_tokens=4000, **messages_dict, **optional_args
             ) as stream:
-                with Live(console=console, refresh_per_second=10) as live:
+                if disable_markdown:
                     for text in stream.text_stream:
                         response += text
-                        live.update(Markdown(response))
+                        print(text, end="", flush=True)
+                else:
+                    with Live(console=console, refresh_per_second=10) as live:
+                        for text in stream.text_stream:
+                            response += text
+                            live.update(Markdown(response))
+
+                # Get usage info
+                final_message = stream.get_final_message()
+                usage = final_message.usage
+
         except KeyboardInterrupt:
             print("<KeyboardInterrupt>", flush=True)
         else:
             print()
+            # Print token usage for Anthropic
+            if usage is not None:
+                print(
+                    f"Input tokens: {usage.input_tokens} Output tokens: {usage.output_tokens}"
+                )
 
     elif provider == "google":
         try:
-
             system_prompt, messages = current_history.get_message_history(
                 platform="google"
             )
@@ -223,20 +287,126 @@ if __name__ == "__main__":
             )
 
             response = ""
+            usage_metadata = None
 
-            with Live(console=console, refresh_per_second=10) as live:
+            if disable_markdown:
                 for chunk in completion:
                     if chunk.text:
                         response += chunk.text
-                    live.update(Markdown(response))
+                        print(chunk.text, end="", flush=True)
+                    if hasattr(chunk, "usage_metadata"):
+                        usage_metadata = chunk.usage_metadata
+            else:
+                with Live(console=console, refresh_per_second=10) as live:
+                    for chunk in completion:
+                        if chunk.text:
+                            response += chunk.text
+                        live.update(Markdown(response))
+                        if hasattr(chunk, "usage_metadata"):
+                            usage_metadata = chunk.usage_metadata
 
         except KeyboardInterrupt:
             print("<KeyboardInterrupt>", flush=True)
         else:
             print()
+            # Print token usage for Google
+            if usage_metadata is not None:
+                print(
+                    f"Input tokens: {usage_metadata.prompt_token_count} Output tokens: {usage_metadata.candidates_token_count}"
+                )
+
+    elif provider == "openai_responses":
+        # Handle o3-deep-research using Responses API
+        api_key = os.getenv("OPENAI_API_KEY_CLI")
+
+        # Check for model-specific API key
+        model_abbrevs = MODEL_NAME_TO_ABBREV.get(model_name, [])
+        for model_abbrev in model_abbrevs:
+            env_var = f"OPENAI_API_KEY_{model_abbrev}"
+            if os.getenv(env_var):
+                api_key = os.getenv(env_var)
+                break
+
+        client = OpenAI(api_key=api_key)
+
+        try:
+            messages = current_history.get_message_history(platform="openai")
+
+            # Convert messages to the input format for responses API
+            # The responses API expects an input parameter with conversation
+            input_messages = []
+            for msg in messages:
+                # For text-only messages, use the standard format
+                input_messages.append({"role": msg["role"], "content": msg["content"]})
+
+            # Create request with optional temperature
+            request_params = {
+                "model": model_name,
+                "input": input_messages,
+                # o3-deep-research requires at least one tool
+                "tools": [{"type": "web_search_preview"}],
+                "parallel_tool_calls": True,
+            }
+            if temperature is not None:
+                request_params["temperature"] = temperature
+            # o3-deep-research only supports 'medium' reasoning effort, not 'high'
+            # Don't pass reasoning effort parameter - let it use the default
+            # Note: verbosity is not supported by o3-deep-research in Responses API
+
+            # Use responses.create API with streaming
+            request_params["stream"] = True
+            stream = client.responses.create(**request_params)
+
+            response = ""
+            usage_obj = None
+
+            for event in stream:
+                try:
+                    # Handle different event types
+                    if hasattr(event, "type"):
+                        if event.type == "response.output_text.delta":
+                            if hasattr(event, "delta") and event.delta:
+                                response += event.delta
+                        elif event.type == "response.output.delta":
+                            if hasattr(event, "delta") and event.delta:
+                                response += str(event.delta)
+                        elif event.type == "response.completed":
+                            if hasattr(event, "response"):
+                                # Extract usage from completed event
+                                if hasattr(event.response, "usage"):
+                                    usage_obj = event.response.usage
+
+                    # Fallback: try to extract text from event
+                    if hasattr(event, "text") and event.text:
+                        response += event.text
+                    elif hasattr(event, "output_text") and event.output_text:
+                        response += event.output_text
+                except Exception as e:
+                    print(f"\nDEBUG - Event error: {e}")
+                    print(f"DEBUG - Event object: {event}")
+                    raise
+
+            # Display response
+            if response:
+                console.print(Markdown(response))
+            else:
+                print("No response received")
+
+            completion = usage_obj  # For usage reporting below
+
+        except KeyboardInterrupt:
+            print("<KeyboardInterrupt>", flush=True)
+        else:
+            print()
+            # Print token usage for Responses API
+            if hasattr(completion, "usage"):
+                usage = completion.usage
+                tokens_str = f"Input tokens: {usage.input_tokens} Output tokens: {usage.output_tokens}"
+                if hasattr(usage, "reasoning_tokens") and usage.reasoning_tokens:
+                    tokens_str += f" Reasoning tokens: {usage.reasoning_tokens}"
+                print(tokens_str)
 
     elif provider == "openai" or provider == "xai":
-
         base_url = "https://api.x.ai/v1" if provider == "xai" else None
         if provider == "xai":
             api_key = os.getenv("XAI_API_KEY")
@@ -256,10 +426,9 @@ if __name__ == "__main__":
             base_url=base_url,
         )
 
+        usage = None
         try:
-
             if uses_legacy_completions(model_name):
-
                 prompt = current_history.get_message_history(platform="legacy")
 
                 completion = client.completions.create(
@@ -277,7 +446,6 @@ if __name__ == "__main__":
                     print(chunk_message_str, end="", flush=True)
 
             elif lacks_streaming_support(model_name):
-
                 completion = client.chat.completions.create(
                     model=model_name,
                     messages=current_history.get_message_history(platform="openai"),
@@ -286,6 +454,7 @@ if __name__ == "__main__":
 
                 response = completion.choices[0].message.content
                 print(response)
+                usage = completion.usage
 
             else:
                 completion = client.chat.completions.create(
@@ -293,24 +462,66 @@ if __name__ == "__main__":
                     messages=current_history.get_message_history(platform="openai"),
                     stream=True,
                     **optional_args,
+                    stream_options={"include_usage": True},
                 )  # type: ignore
 
                 response = ""
-                with Live(console=console, refresh_per_second=10) as live:
+                if disable_markdown:
                     for chunk in completion:
-                        chunk_message = chunk.choices[0].delta
-                        chunk_message_str = (
-                            chunk_message.content
-                            if chunk_message.content is not None
-                            else ""
-                        )
-                        response += chunk_message_str
-                        live.update(Markdown(response))
+                        try:
+                            if chunk.usage:
+                                usage = chunk.usage
+                            if len(chunk.choices) > 0:
+                                chunk_message = chunk.choices[0].delta
+                                chunk_message_str = (
+                                    chunk_message.content
+                                    if chunk_message.content is not None
+                                    else ""
+                                )
+                                response += chunk_message_str
+                                print(chunk_message_str, end="", flush=True)
+                        except Exception as e:
+                            print(f"\nDEBUG - Chunk error: {e}")
+                            print(f"DEBUG - Chunk object: {chunk}")
+                            raise
+                else:
+                    with Live(console=console, refresh_per_second=10) as live:
+                        for chunk in completion:
+                            try:
+                                if chunk.usage:
+                                    usage = chunk.usage
+                                if len(chunk.choices) > 0:
+                                    chunk_message = chunk.choices[0].delta
+                                    chunk_message_str = (
+                                        chunk_message.content
+                                        if chunk_message.content is not None
+                                        else ""
+                                    )
+                                    response += chunk_message_str
+                                    live.update(Markdown(response))
+                            except Exception as e:
+                                print(f"\nDEBUG - Chunk error: {e}")
+                                print(f"DEBUG - Chunk object: {chunk}")
+                                raise
 
         except KeyboardInterrupt:
             print("<KeyboardInterrupt>", flush=True)
         else:
             print()
+            # Print token usage for OpenAI/XAI
+            if usage is not None:
+                tokens_str = f"Input tokens: {usage.prompt_tokens} Output tokens: {usage.completion_tokens}"
+                if (
+                    hasattr(usage, "completion_tokens_details")
+                    and usage.completion_tokens_details
+                ):
+                    details = usage.completion_tokens_details
+                    if (
+                        hasattr(details, "reasoning_tokens")
+                        and details.reasoning_tokens
+                    ):
+                        tokens_str += f" Reasoning tokens: {details.reasoning_tokens}"
+                print(tokens_str)
 
     # Log to history
     if args.private:
