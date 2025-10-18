@@ -1,12 +1,12 @@
 # Simple command-line interface for LLMs
 
-## Installation instructions 
+## Installation instructions
 
 1. Clone or download this repo
 
-2. Install necessary dependencies:
+2. Install dependencies:
 ```
-pipenv install
+pip install openai anthropic google-genai colorama rich
 ```
 
 3. Run `./install.sh`
