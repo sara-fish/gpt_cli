@@ -26,10 +26,10 @@ fi
 echo "Successfully installed.
 
 Before using, you still need to add these lines to ~/.bashrc:
-export OPENAI_API_KEY     =<your API key>
-export ANTHROPIC_API_KEY  =<your API key>
-export GOOGLE_API_KEY     =<your API key>
-export XAI_API_KEY        =<your API key>
+export OPENAI_API_KEY_CLI     =<your API key>
+export ANTHROPIC_API_KEY_CLI  =<your API key>
+export GOOGLE_API_KEY_CLI     =<your API key>
+export XAI_API_KEY_CLI        =<your API key>
 Find this information at https://platform.openai.com/account/api-keys and https://platform.openai.com/account/org-settings and https://console.anthropic.com/settings/keys and https://aistudio.google.com/app/apikey
 
 Then run 

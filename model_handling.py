@@ -19,12 +19,12 @@ OPENAI_MODELS = [
 ]
 
 # Anthropic models
-CLAUDE_4_1_OPUS_MODEL_NAME = "claude-opus-4-1-20250805"
 CLAUDE_4_5_SONNET_MODEL_NAME = "claude-sonnet-4-5-20250929"
+CLAUDE_4_5_OPUS_MODEL_NAME = "claude-opus-4-5-20251101"
 
 ANTHROPIC_MODELS = [
-    CLAUDE_4_1_OPUS_MODEL_NAME,
     CLAUDE_4_5_SONNET_MODEL_NAME,
+    CLAUDE_4_5_OPUS_MODEL_NAME,
 ]
 
 # Google models
@@ -37,7 +37,7 @@ GOOGLE_MODELS = [GEMINI_2_5_MODEL_NAME]
 GROK_4_MODEL_NAME = "grok-4-0709"
 XAI_MODELS = [GROK_4_MODEL_NAME]
 
-DEFAULT_MODEL_NAME = CLAUDE_4_1_OPUS_MODEL_NAME
+DEFAULT_MODEL_NAME = CLAUDE_4_5_OPUS_MODEL_NAME
 
 
 def lacks_streaming_support(model_name: str) -> bool:
@@ -75,8 +75,8 @@ MODEL_NAME_TO_ABBREV = {
     O3_DEEP_RESEARCH_MODEL_NAME: ["d", "o3d", "deep"],
     GPT_4_BASE: ["base"],
     GPT_5_MODEL_NAME: ["5", "gpt-5"],
-    CLAUDE_4_1_OPUS_MODEL_NAME: ["c"],
     CLAUDE_4_5_SONNET_MODEL_NAME: ["cs"],
+    CLAUDE_4_5_OPUS_MODEL_NAME: ["c"],
     GEMINI_2_5_MODEL_NAME: ["g"],
     GROK_4_MODEL_NAME: ["x", "grok"],
 }

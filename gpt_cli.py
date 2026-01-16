@@ -231,7 +231,7 @@ if __name__ == "__main__":
 
     if provider == "anthropic":
         try:
-            client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+            client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY_CLI"))
 
             system_prompt, messages = current_history.get_message_history(
                 platform="anthropic"
@@ -279,7 +279,7 @@ if __name__ == "__main__":
                 platform="google"
             )
 
-            client = genai.Client(api_key=os.getenv("GOOGLE_API_KEY"))
+            client = genai.Client(api_key=os.getenv("GOOGLE_API_KEY_CLI"))
 
             completion = client.models.generate_content_stream(
                 model=model_name,
@@ -409,7 +409,7 @@ if __name__ == "__main__":
     elif provider == "openai" or provider == "xai":
         base_url = "https://api.x.ai/v1" if provider == "xai" else None
         if provider == "xai":
-            api_key = os.getenv("XAI_API_KEY")
+            api_key = os.getenv("XAI_API_KEY_CLI")
         else:
             # first detect if there's a model-specific API key
             model_abbrevs = MODEL_NAME_TO_ABBREV.get(model_name, [])
