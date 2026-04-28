@@ -7,6 +7,8 @@ import anthropic
 from google import genai
 import argparse
 from datetime import datetime
+from pathlib import Path
+import pickle
 import subprocess
 from typing import Optional
 from rich.console import Console
@@ -77,6 +79,7 @@ USER_INFO = """
 DEFAULT_SYSTEM_PROMPT = CLAUDE_PROMPT_EXCERPT + USER_INFO
 
 DEFAULT_FILENAME = "LLM_ATTACHED_CONTEXT.txt"
+GPT_CLI_DIR = Path("~/.gpt_cli").expanduser()
 
 
 if __name__ == "__main__":
@@ -130,14 +133,30 @@ if __name__ == "__main__":
     parser.add_argument(
         "-f",
         "--fileread",
-        action="store_true",
-        help=f"If selected, appends to prompt content from {DEFAULT_FILENAME}",
+        nargs="?",
+        default=False,
+        const=True,
+        type=str,
+        metavar="NAME",
+        help=(
+            f"Append context from a file to the prompt. With no NAME, use "
+            f"{DEFAULT_FILENAME}. With NAME, use ~/.gpt_cli/NAME.txt "
+            f"(error if it does not exist)."
+        ),
     )
     parser.add_argument(
         "-w",
         "--filewrite",
-        action="store_true",
-        help=f"If selected, opens {DEFAULT_FILENAME} in vim to let you paste content in.",
+        nargs="?",
+        default=False,
+        const=True,
+        type=str,
+        metavar="NAME",
+        help=(
+            f"Open an attached-context file in vim. With no NAME, open "
+            f"{DEFAULT_FILENAME}. With NAME, open ~/.gpt_cli/NAME.txt "
+            f"(creating the directory if needed)."
+        ),
     )
 
     parser.add_argument(
@@ -180,8 +199,16 @@ if __name__ == "__main__":
     model_name = extract_model_name(short_model_name)
     conv_id = args.conversation_id
     system_prompt = args.system
-    fileread = args.fileread
-    filewrite = args.filewrite
+    fileread = args.fileread  # False, True, or str
+    filewrite = args.filewrite  # False, True, or str
+
+    # If -f got a string but no positional prompt was given, the string was
+    # meant as the prompt (preserve original `ask -f "prompt"` behavior with
+    # the default file).
+    if isinstance(fileread, str) and user_prompt is None:
+        user_prompt = fileread
+        fileread = True
+
     temperature = args.temperature
     reasoning_effort = args.reasoning
     verbosity = args.verbosity
@@ -197,7 +224,12 @@ if __name__ == "__main__":
 
     # Next handle write mode
     if filewrite:
-        subprocess.run(["vim", DEFAULT_FILENAME])
+        if isinstance(filewrite, str):
+            GPT_CLI_DIR.mkdir(parents=True, exist_ok=True)
+            target = GPT_CLI_DIR / f"{filewrite}.txt"
+        else:
+            target = Path(DEFAULT_FILENAME)
+        subprocess.run(["vim", str(target)])
         exit(0)
 
     # Otherwise enter conversation mode
@@ -211,8 +243,26 @@ if __name__ == "__main__":
     if not message_history.is_history_list():
         message_history.init_history_list()
 
-    chat_names = message_history.get_chat_names()
-    history_list = message_history.get_history_list()
+    # The history file can end up empty (0 bytes) or corrupted if a previous
+    # run was killed between `open(..., "wb")` and `pickle.dump`. Surface a
+    # clear, actionable error instead of letting pickle.load explode.
+    history_path = (
+        Path(message_history.PATHNAME_MESSAGE_HISTORY).expanduser()
+        / message_history.FILENAME_MESSAGE_HISTORY
+    )
+    try:
+        chat_names = message_history.get_chat_names()
+        history_list = message_history.get_history_list()
+    except (EOFError, pickle.UnpicklingError, KeyError) as e:
+        print(
+            f"Error: Failed to load conversation history from {history_path} "
+            f"({type(e).__name__}: {e}).\n"
+            f"The file appears to be empty or corrupted (most likely from a "
+            f"prior run killed mid-write). To start fresh with a new history, "
+            f"delete it and retry:\n"
+            f"  rm {history_path}"
+        )
+        exit(1)
 
     # Get current chat name and history
     if reply_mode:
@@ -235,13 +285,22 @@ if __name__ == "__main__":
         )
 
     if fileread:
+        if isinstance(fileread, str):
+            target = GPT_CLI_DIR / f"{fileread}.txt"
+            not_found_hint = (
+                f"Error: {target} not found. First run `ask -w {fileread}` "
+                f"to create it."
+            )
+        else:
+            target = Path(DEFAULT_FILENAME)
+            not_found_hint = (
+                f"Error: {target} not found. First run `ask -w` to create it."
+            )
         try:
-            with open(DEFAULT_FILENAME, "r") as f:
+            with open(target, "r") as f:
                 fileread_content = f.read()
         except FileNotFoundError:
-            print(
-                f"Error: {DEFAULT_FILENAME} not found. First run `gpt -w` to write to this file."
-            )
+            print(not_found_hint)
             exit(1)
         full_prompt = user_prompt + fileread_content
     else:

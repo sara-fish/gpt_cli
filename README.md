@@ -47,9 +47,18 @@ If you have additional context you would like to attach to your prompt (e.g. cod
 
 This will open a file `LLM_ATTACHED_CONTEXT.txt` in vim. Paste in the context you want, save and exit. 
 
+To create a custom, persistent file, run 
+
+`ask -w example`
+
 **Step 2: query model**
 
 `ask -f "How do I fix the following code?"`
 
 When the `-f` flag is enabled, the text in `LLM_ATTACHED_CONTEXT.txt` will be appended to the end of your prompt. 
 
+Similarly, 
+
+`ask -f example "Answer my question keeping in mind this context"`
+
+will append `example.txt` from `.gpt_cli/`. 
