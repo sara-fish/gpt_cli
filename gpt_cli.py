@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import concurrent.futures
 import os
 from openai import OpenAI
 import anthropic
@@ -7,11 +8,21 @@ from google import genai
 import argparse
 from datetime import datetime
 import subprocess
+from typing import Optional
 from rich.console import Console
 from rich.markdown import Markdown
 from rich.live import Live
 
 import message_history
+from model_discovery import (
+    compare_to_registry,
+    fetch_anthropic_models,
+    fetch_google_models,
+    fetch_openai_models,
+    format_drift_warning,
+    mark_check_done,
+    should_run_discovery,
+)
 from model_handling import (
     MODEL_NAME_TO_ABBREV,
     extract_model_name,
@@ -23,6 +34,34 @@ from model_handling import (
     supports_reasoning_effort,
     supports_verbosity,
 )
+
+
+def _maybe_print_drift_warning(
+    discovery_future: Optional[concurrent.futures.Future],
+    blocking: bool,
+) -> bool:
+    """Print drift warning if discovery is done (or wait if blocking).
+
+    Returns True if the warning was handled this call (printed, errored, or
+    confirmed no drift) — caller uses this to avoid printing twice. Always
+    calls mark_check_done() so a transient outage doesn't trigger 3 retries
+    per query for the rest of the day.
+    """
+    if discovery_future is None:
+        return True  # no discovery scheduled — treat as handled
+    if not blocking and not discovery_future.done():
+        return False
+    try:
+        drift = discovery_future.result(timeout=10 if blocking else 0)
+    except Exception as e:
+        print(f"\n[model discovery failed: {type(e).__name__}: {e}]")
+        mark_check_done()
+        return True
+    if drift:
+        print(format_drift_warning(drift))
+    mark_check_done()
+    return True
+
 
 CLAUDE_PROMPT_EXCERPT = """
 You should give concise responses to very simple questions, but provide thorough responses to complex and open-ended questions. You should discuss virtually any topic factually and objectively. You should explain difficult concepts or ideas clearly. You should also illustrate your explanations with examples, thought experiments, or metaphors. If the user corrects you or tells you that you've made a mistake, you should first think through the issue carefully before acknowledging the user, since users sometimes make errors themselves. You should never start your response by saying a question or idea or observation was good, great, fascinating, profound, excellent, or any other positive adjective. You should skip the flattery and respond directly. You should critically evaluate any theories, claims, and ideas presented to you rather than automatically agreeing or praising them. When presented with dubious, incorrect, ambiguous, or unverifiable theories, claims, or ideas, you should respectfully point out flaws, factual errors, lack of evidence, or lack of clarity rather than validating them. You should prioritize truthfulness and accuracy over agreeability, and should not tell people that incorrect theories are true just to be polite. When engaging with metaphorical, allegorical, or symbolic interpretations (such as those found in continental philosophy, religious texts, literature, or psychoanalytic theory), you should acknowledge their non-literal nature while still being able to discuss them critically.
@@ -229,6 +268,27 @@ if __name__ == "__main__":
 
     console = Console()  # for printing markdown
 
+    # Once-per-day model registry drift check. Fires API calls in parallel so
+    # they overlap with the actual LLM request. Warning prints either before
+    # the response (if discovery finishes first) or after (if it finishes later).
+    discovery_future: Optional[concurrent.futures.Future] = None
+    discovery_executor: Optional[concurrent.futures.ThreadPoolExecutor] = None
+    warning_printed = False
+
+    if should_run_discovery():
+        discovery_executor = concurrent.futures.ThreadPoolExecutor(max_workers=3)
+        f_ant = discovery_executor.submit(fetch_anthropic_models)
+        f_oai = discovery_executor.submit(fetch_openai_models)
+        f_goo = discovery_executor.submit(fetch_google_models)
+
+        def _wait_and_compare() -> dict:
+            return compare_to_registry(f_ant.result(), f_oai.result(), f_goo.result())
+
+        discovery_future = discovery_executor.submit(_wait_and_compare)
+
+    # Pre-stream non-blocking poll: print warning above the response if we're already done
+    warning_printed = _maybe_print_drift_warning(discovery_future, blocking=False)
+
     if provider == "anthropic":
         try:
             client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY_CLI"))
@@ -314,97 +374,6 @@ if __name__ == "__main__":
                 print(
                     f"Input tokens: {usage_metadata.prompt_token_count} Output tokens: {usage_metadata.candidates_token_count}"
                 )
-
-    elif provider == "openai_responses":
-        # Handle o3-deep-research using Responses API
-        api_key = os.getenv("OPENAI_API_KEY_CLI")
-
-        # Check for model-specific API key
-        model_abbrevs = MODEL_NAME_TO_ABBREV.get(model_name, [])
-        for model_abbrev in model_abbrevs:
-            env_var = f"OPENAI_API_KEY_{model_abbrev}"
-            if os.getenv(env_var):
-                api_key = os.getenv(env_var)
-                break
-
-        client = OpenAI(api_key=api_key)
-
-        try:
-            messages = current_history.get_message_history(platform="openai")
-
-            # Convert messages to the input format for responses API
-            # The responses API expects an input parameter with conversation
-            input_messages = []
-            for msg in messages:
-                # For text-only messages, use the standard format
-                input_messages.append({"role": msg["role"], "content": msg["content"]})
-
-            # Create request with optional temperature
-            request_params = {
-                "model": model_name,
-                "input": input_messages,
-                # o3-deep-research requires at least one tool
-                "tools": [{"type": "web_search_preview"}],
-                "parallel_tool_calls": True,
-            }
-            if temperature is not None:
-                request_params["temperature"] = temperature
-            # o3-deep-research only supports 'medium' reasoning effort, not 'high'
-            # Don't pass reasoning effort parameter - let it use the default
-            # Note: verbosity is not supported by o3-deep-research in Responses API
-
-            # Use responses.create API with streaming
-            request_params["stream"] = True
-            stream = client.responses.create(**request_params)
-
-            response = ""
-            usage_obj = None
-
-            for event in stream:
-                try:
-                    # Handle different event types
-                    if hasattr(event, "type"):
-                        if event.type == "response.output_text.delta":
-                            if hasattr(event, "delta") and event.delta:
-                                response += event.delta
-                        elif event.type == "response.output.delta":
-                            if hasattr(event, "delta") and event.delta:
-                                response += str(event.delta)
-                        elif event.type == "response.completed":
-                            if hasattr(event, "response"):
-                                # Extract usage from completed event
-                                if hasattr(event.response, "usage"):
-                                    usage_obj = event.response.usage
-
-                    # Fallback: try to extract text from event
-                    if hasattr(event, "text") and event.text:
-                        response += event.text
-                    elif hasattr(event, "output_text") and event.output_text:
-                        response += event.output_text
-                except Exception as e:
-                    print(f"\nDEBUG - Event error: {e}")
-                    print(f"DEBUG - Event object: {event}")
-                    raise
-
-            # Display response
-            if response:
-                console.print(Markdown(response))
-            else:
-                print("No response received")
-
-            completion = usage_obj  # For usage reporting below
-
-        except KeyboardInterrupt:
-            print("<KeyboardInterrupt>", flush=True)
-        else:
-            print()
-            # Print token usage for Responses API
-            if hasattr(completion, "usage"):
-                usage = completion.usage
-                tokens_str = f"Input tokens: {usage.input_tokens} Output tokens: {usage.output_tokens}"
-                if hasattr(usage, "reasoning_tokens") and usage.reasoning_tokens:
-                    tokens_str += f" Reasoning tokens: {usage.reasoning_tokens}"
-                print(tokens_str)
 
     elif provider == "openai" or provider == "xai":
         base_url = "https://api.x.ai/v1" if provider == "xai" else None
@@ -522,6 +491,13 @@ if __name__ == "__main__":
                     ):
                         tokens_str += f" Reasoning tokens: {details.reasoning_tokens}"
                 print(tokens_str)
+
+    # Post-stream blocking poll: print warning below the response if discovery
+    # was still running when the LLM finished
+    if not warning_printed:
+        _maybe_print_drift_warning(discovery_future, blocking=True)
+    if discovery_executor is not None:
+        discovery_executor.shutdown(wait=False)
 
     # Log to history
     if args.private:
