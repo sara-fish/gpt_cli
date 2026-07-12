@@ -3,6 +3,9 @@ from typing import Literal
 
 OPENAI_MODEL_TO_ABBREV: dict[str, list[str]] = {
     # GPT-5 family
+    "gpt-5.6-sol": ["5.6", "sol"],
+    "gpt-5.6-terra": [],
+    "gpt-5.6-luna": [],
     "gpt-5.5-2026-04-23": ["5.5"],
     "gpt-5.4-2026-03-05": [],
     "gpt-5.4-mini-2026-03-17": [],
@@ -34,27 +37,30 @@ OPENAI_MODEL_TO_ABBREV: dict[str, list[str]] = {
 }
 
 ANTHROPIC_MODEL_TO_ABBREV: dict[str, list[str]] = {
-    "claude-opus-4-7": ["c", "co"],
+    # Fable 5: thinking always on, temperature not supported (API rejects -t)
+    "claude-fable-5": ["c", "cf", "fable"],
+    "claude-opus-4-8": ["co"],
+    "claude-opus-4-7": ["co7"],
     "claude-opus-4-6": ["co6"],
     "claude-opus-4-5-20251101": ["co5"],
     "claude-opus-4-1-20250805": [],
-    "claude-opus-4-20250514": [],
-    "claude-sonnet-4-6": ["cs"],
+    "claude-sonnet-5": ["cs"],
+    "claude-sonnet-4-6": ["cs6"],
     "claude-sonnet-4-5-20250929": ["cs5"],
-    "claude-sonnet-4-20250514": [],
     "claude-haiku-4-5-20251001": ["ch"],
 }
 
 GOOGLE_MODEL_TO_ABBREV: dict[str, list[str]] = {
     # Gemini 3 family
+    "gemini-3.5-flash": ["g", "gf"],
     "gemini-3.1-pro-preview": ["g3"],
     "gemini-3.1-flash-lite-preview": [],
     "gemini-3.1-flash-live-preview": [],
     "gemini-3-pro-preview": [],
     "gemini-3-flash-preview": [],
     # Gemini 2.5
-    "gemini-2.5-pro": ["g", "gp"],
-    "gemini-2.5-flash": ["gf"],
+    "gemini-2.5-pro": ["gp"],
+    "gemini-2.5-flash": [],
     "gemini-2.5-flash-lite": [],
     # Gemini 2.0
     "gemini-2.0-flash": [],
@@ -72,7 +78,7 @@ MODEL_NAME_TO_ABBREV: dict[str, list[str]] = {
     **XAI_MODEL_TO_ABBREV,
 }
 
-DEFAULT_MODEL_NAME = "claude-opus-4-7"
+DEFAULT_MODEL_NAME = "claude-opus-4-8"
 
 
 def lacks_streaming_support(model_name: str) -> bool:
@@ -87,6 +93,9 @@ def is_reasoning_model(model_name: str) -> bool:
 
 
 _GPT_5_FAMILY: set[str] = {
+    "gpt-5.6-sol",
+    "gpt-5.6-terra",
+    "gpt-5.6-luna",
     "gpt-5-2025-08-07",
     "gpt-5-mini-2025-08-07",
     "gpt-5-nano-2025-08-07",

@@ -59,9 +59,15 @@ _GOOGLE_EXCLUDED_SUBSTRINGS: tuple[str, ...] = (
 )
 
 # Registry entries the filter would otherwise mark as drift.
-# gpt-4-base lacks a -YYYY suffix, so the OpenAI filter excludes it -- but
-# we keep it in the registry for legacy-completions support.
-_OPENAI_REGISTRY_ALLOWLIST: set[str] = {"gpt-4-base"}
+# These lack a -YYYY date suffix, so the OpenAI filter excludes them -- but
+# they are real, callable IDs (gpt-4-base for legacy completions; the
+# gpt-5.6 family ships undated).
+_OPENAI_REGISTRY_ALLOWLIST: set[str] = {
+    "gpt-4-base",
+    "gpt-5.6-sol",
+    "gpt-5.6-terra",
+    "gpt-5.6-luna",
+}
 
 
 def _is_excluded_openai(model_id: str) -> bool:
